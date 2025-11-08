@@ -48,6 +48,28 @@ Highlight.js supports 190+ languages including:
 
 The default theme is GitHub Dark, which provides excellent contrast and readability. You can change the theme by modifying the build script to use a different Highlight.js theme.
 
+### Language Labels
+
+Every code block displays its programming language in the header, making it easy to identify the syntax at a glance.
+
+**Features:**
+- **Auto-Detection**: Language automatically extracted from code fence syntax
+- **Clean Display**: Shows in uppercase (e.g., "JAVASCRIPT", "PYTHON", "BASH")
+- **Header Design**: Integrated into code block header with subtle styling
+- **190+ Languages**: Supports all Highlight.js languages
+
+**Example:**
+
+````markdown
+```javascript
+function hello() {
+  console.log('Hello!');
+}
+```
+````
+
+This displays "JAVASCRIPT" in the code block header.
+
 ### Copy Code Button
 
 Every code block includes a copy button that appears when you hover over it (or is always visible on touch devices).
@@ -56,6 +78,7 @@ Every code block includes a copy button that appears when you hover over it (or 
 - **One-Click Copy**: Click to copy code to clipboard
 - **Visual Feedback**: Button shows "Copied!" confirmation with checkmark
 - **Smart Appearance**: Appears on hover (desktop) or always visible (mobile)
+- **Positioned in Header**: Placed in the top-right corner of each code block
 - **Fallback Support**: Works on older browsers without Clipboard API
 - **Accessible**: Includes proper ARIA labels for screen readers
 

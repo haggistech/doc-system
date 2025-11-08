@@ -20,6 +20,27 @@ marked.use(markedHighlight({
   }
 }));
 
+// Add custom renderer for code blocks with language labels
+marked.use({
+  renderer: {
+    code(code, infostring) {
+      const lang = infostring || 'plaintext';
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      const highlighted = hljs.highlight(code, { language }).value;
+
+      // Format language name for display (capitalize first letter)
+      const displayLang = lang.charAt(0).toUpperCase() + lang.slice(1);
+
+      return `<div class="code-block-container">
+  <div class="code-block-header">
+    <span class="code-block-language">${displayLang}</span>
+  </div>
+  <pre><code class="hljs language-${lang}">${highlighted}</code></pre>
+</div>`;
+    }
+  }
+});
+
 // Configure marked with admonitions extension
 marked.use({
   extensions: [{

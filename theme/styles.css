@@ -506,7 +506,49 @@ article code {
   font-family: 'Courier New', Courier, monospace;
 }
 
-/* Code Block Wrapper with Copy Button */
+/* Code Block Container with Language Label */
+.code-block-container {
+  position: relative;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--code-bg);
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.code-block-language {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.code-block-container pre {
+  background: transparent;
+  padding: 1rem;
+  border-radius: 0;
+  overflow-x: auto;
+  margin-bottom: 0;
+  border: none;
+}
+
+.code-block-container pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Legacy support for code blocks without container */
 .code-block-wrapper {
   position: relative;
   margin-bottom: 1rem;
@@ -548,6 +590,8 @@ article pre code {
   z-index: 10;
 }
 
+/* Show copy button on hover for both new and legacy structures */
+.code-block-container:hover .copy-code-button,
 .code-block-wrapper:hover .copy-code-button {
   opacity: 1;
 }
