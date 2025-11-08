@@ -1,6 +1,6 @@
-# Docker Image Setup Guide
+# Docker Setup Guide
 
-The Docker image has been built successfully and is ready to push to GitHub Container Registry.
+This guide covers building and running the documentation system locally using Docker.
 
 ## Current Status
 
@@ -8,126 +8,36 @@ The Docker image has been built successfully and is ready to push to GitHub Cont
 ✅ **Multi-stage build**: Node.js builder + nginx server
 ✅ **Optimized**: Alpine-based for minimal size
 
-## Pushing to GitHub Container Registry
+## Building the Docker Image
 
-### Step 1: Create Token with Correct Permissions
-
-The current token needs additional permissions. Create a new Personal Access Token:
-
-1. Go to: https://github.com/settings/tokens/new
-2. Name it: `doc-system-packages`
-3. Select these scopes:
-   - ✅ `write:packages` - Upload packages to GitHub Package Registry
-   - ✅ `read:packages` - Download packages from GitHub Package Registry
-   - ✅ `delete:packages` - Delete packages from GitHub Package Registry
-   - ✅ `repo` - Full control of private repositories (if needed)
-4. Click "Generate token"
-5. Copy the token
-
-### Step 2: Login to GitHub Container Registry
+Build the Docker image locally:
 
 ```bash
-# Replace YOUR_TOKEN with the token from step 1
-echo "YOUR_TOKEN" | docker login ghcr.io -u haggistech --password-stdin
+# Build using docker command
+docker build -t doc-system:latest .
+
+# Or use the Makefile
+make docker-build
 ```
 
-### Step 3: Tag the Image
+### Multi-Architecture Builds
+
+To build for multiple architectures:
 
 ```bash
-# Tag for latest
-docker tag doc-system:latest ghcr.io/haggistech/doc-system:latest
+# Build for multiple platforms
+docker buildx build --platform linux/amd64,linux/arm64 -t doc-system:latest .
 
-# Tag for specific version
-docker tag doc-system:latest ghcr.io/haggistech/doc-system:v1.0.0
+# Or use the Makefile
+make docker-buildx
 ```
 
-### Step 4: Push to Registry
+## Running Locally
+
+### Using Docker Directly
 
 ```bash
-# Push both tags
-docker push ghcr.io/haggistech/doc-system:latest
-docker push ghcr.io/haggistech/doc-system:v1.0.0
-```
-
-### Step 5: Make Package Public (Optional)
-
-1. Go to: https://github.com/haggistech?tab=packages
-2. Click on `doc-system` package
-3. Click "Package settings"
-4. Scroll to "Danger Zone"
-5. Click "Change visibility" → "Public"
-
-## Alternative: Use GitHub Actions
-
-The easier way is to let GitHub Actions build and push automatically:
-
-### Method 1: Manual Trigger
-
-```bash
-# Just create a tag and push it
-git tag -a v1.0.1 -m "Release v1.0.1"
-git push origin v1.0.1
-```
-
-GitHub Actions will automatically:
-- Build the Docker image
-- Push to `ghcr.io/haggistech/doc-system:v1.0.1`
-- Push to `ghcr.io/haggistech/doc-system:latest`
-
-### Method 2: Trigger Workflow Manually
-
-1. Go to: https://github.com/haggistech/doc-system/actions/workflows/docker.yml
-2. Click "Run workflow"
-3. Select branch: `master`
-4. Click "Run workflow"
-
-## Using the Docker Image
-
-Once pushed, you can use it anywhere:
-
-### Docker
-
-```bash
-# Pull and run
-docker pull ghcr.io/haggistech/doc-system:latest
-docker run -p 8080:80 ghcr.io/haggistech/doc-system:latest
-```
-
-### Docker Compose
-
-Update `docker-compose.yml`:
-
-```yaml
-services:
-  doc-system:
-    image: ghcr.io/haggistech/doc-system:latest
-    ports:
-      - "8080:80"
-```
-
-### Kubernetes
-
-Update `k8s/deployment.yaml`:
-
-```yaml
-spec:
-  containers:
-  - name: doc-system
-    image: ghcr.io/haggistech/doc-system:v1.0.0
-```
-
-Then deploy:
-
-```bash
-kubectl apply -k k8s/
-```
-
-## Local Testing
-
-You can test the locally built image right now:
-
-```bash
-# Run the container
+# Run on port 8080
 docker run -d -p 8080:80 --name doc-system doc-system:latest
 
 # Access the documentation
@@ -141,12 +51,59 @@ docker stop doc-system
 docker rm doc-system
 ```
 
-Or use the Makefile:
+### Using Docker Compose
+
+The easiest way to run locally:
 
 ```bash
-make docker-run    # Start container
-make docker-logs   # View logs
-make docker-stop   # Stop container
+# Start the service
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the service
+docker-compose down
+```
+
+Access at: http://localhost:8080
+
+### Using Makefile Commands
+
+```bash
+make docker-run     # Start container on port 8080
+make docker-logs    # View logs
+make docker-stop    # Stop and remove container
+
+# Or use docker-compose
+make compose-up     # Start with docker-compose
+make compose-logs   # View logs
+make compose-down   # Stop docker-compose
+```
+
+## Customizing Port
+
+### Docker Command
+
+```bash
+# Run on port 3000 instead
+docker run -d -p 3000:80 --name doc-system doc-system:latest
+```
+
+### Docker Compose
+
+Edit `docker-compose.yml`:
+
+```yaml
+ports:
+  - "3000:80"  # Access at http://localhost:3000
+```
+
+### Makefile
+
+```bash
+# Override default port
+make docker-run PORT=3000
 ```
 
 ## Verifying the Build
@@ -164,47 +121,180 @@ docker run --rm doc-system:latest cat /etc/nginx/conf.d/default.conf
 docker run --rm doc-system:latest nginx -t
 ```
 
+## Kubernetes Deployment
+
+For detailed Kubernetes deployment instructions, see [DOCKER.md](DOCKER.md).
+
+### Quick Deploy to Local Cluster
+
+```bash
+# Build the image
+docker build -t doc-system:latest .
+
+# Load into your local cluster
+# For minikube:
+minikube image load doc-system:latest
+
+# For kind:
+kind load docker-image doc-system:latest
+
+# For k3d:
+k3d image import doc-system:latest
+
+# Deploy to Kubernetes
+kubectl apply -k k8s/
+
+# Port forward to access locally
+kubectl port-forward svc/doc-system 8080:80
+```
+
 ## Troubleshooting
 
-### Permission Denied
+### Port Already in Use
 
-If you get "permission_denied" when pushing:
-- Verify token has `write:packages` scope
-- Ensure you're logged in: `docker login ghcr.io`
-- Check organization settings allow packages
+If you see "address already in use":
+
+```bash
+# Use a different port
+docker run -d -p 3000:80 --name doc-system doc-system:latest
+```
+
+### Container Name Conflict
+
+If the container name is already in use:
+
+```bash
+# Remove the existing container
+docker rm -f doc-system
+
+# Then run again
+docker run -d -p 8080:80 --name doc-system doc-system:latest
+```
 
 ### Image Too Large
 
 Current image is 52.9MB (very good). If it grows:
 - Check what's being copied in Dockerfile
 - Review .dockerignore file
-- Use multi-stage builds (already implemented)
+- Verify multi-stage build is working properly
 
 ### Build Fails
 
 If the build fails:
+
 ```bash
 # Clear build cache
 docker builder prune -a
 
 # Rebuild
+docker build -t doc-system:latest .
+# Or
 make docker-build
 ```
 
-## Next Steps
+### Node.js Version Issues
 
-**Recommended**: Let GitHub Actions handle the Docker builds automatically. Just push tags:
+If you encounter Node.js compatibility issues, update the Dockerfile:
 
-```bash
-git tag -a v1.0.1 -m "Release v1.0.1"
-git push origin v1.0.1
+```dockerfile
+FROM node:18-alpine AS builder  # Use supported LTS version
 ```
 
-This will trigger both:
-1. Auto-versioning workflow (creates release)
-2. Docker build workflow (builds and pushes image)
+## Resource Management
 
-Then you can use the image from anywhere:
+### Setting Resource Limits
+
+#### Docker Run
+
 ```bash
-docker pull ghcr.io/haggistech/doc-system:v1.0.1
+docker run -d \
+  -p 8080:80 \
+  --name doc-system \
+  --memory="256m" \
+  --cpus="0.5" \
+  doc-system:latest
 ```
+
+#### Docker Compose
+
+Edit `docker-compose.yml`:
+
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 256M
+    reservations:
+      cpus: '0.25'
+      memory: 128M
+```
+
+#### Kubernetes
+
+See resource limits in [k8s/deployment.yaml](k8s/deployment.yaml).
+
+## Development Workflow
+
+### Quick Rebuild and Test
+
+```bash
+# Build the documentation
+npm run build
+
+# Rebuild Docker image
+docker build -t doc-system:latest .
+
+# Stop old container and start new one
+docker rm -f doc-system
+docker run -d -p 8080:80 --name doc-system doc-system:latest
+
+# Or use Makefile
+make docker-stop docker-run
+```
+
+### Automated with Makefile
+
+```bash
+# Build and run in one command
+make docker-all
+```
+
+## Health Checks
+
+The Docker Compose configuration includes health checks:
+
+```yaml
+healthcheck:
+  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 10s
+```
+
+Check container health:
+
+```bash
+docker ps
+# Look for "healthy" status
+
+# Or inspect health status
+docker inspect --format='{{.State.Health.Status}}' doc-system
+```
+
+## Best Practices
+
+1. **Use specific tags** instead of `latest` in production
+2. **Set resource limits** to prevent resource exhaustion
+3. **Enable health checks** for automatic restarts
+4. **Use multi-stage builds** (already implemented)
+5. **Keep images small** (current: 52.9MB)
+6. **Use .dockerignore** to exclude unnecessary files (already configured)
+7. **Test locally** before deploying to clusters
+
+## Additional Resources
+
+- [Docker Documentation](https://docs.docker.com/)
+- [DOCKER.md](DOCKER.md) - Comprehensive Docker & Kubernetes guide
+- [nginx Documentation](https://nginx.org/en/docs/)
