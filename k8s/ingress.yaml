@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: doc-system
+  labels:
+    app: doc-system
+  annotations:
+    # Uncomment and modify based on your ingress controller
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  # Uncomment if using TLS
+  # tls:
+  # - hosts:
+  #   - docs.example.com
+  #   secretName: doc-system-tls
+  rules:
+  - host: docs.example.com  # Change to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: doc-system
+            port:
+              number: 80

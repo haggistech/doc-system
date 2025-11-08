@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  doc-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doc-system
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - doc-network
+
+networks:
+  doc-network:
+    driver: bridge
