@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { marked } from 'marked';
-import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import fm from 'front-matter';
 import { fileURLToPath } from 'url';
@@ -11,16 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-// Configure marked with syntax highlighting
-marked.use(markedHighlight({
-  langPrefix: 'hljs language-',
-  highlight(code, lang) {
-    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-    return hljs.highlight(code, { language }).value;
-  }
-}));
-
-// Add custom renderer for code blocks with language labels
+// Configure marked with syntax highlighting and language labels
 marked.use({
   renderer: {
     code(code, infostring) {
