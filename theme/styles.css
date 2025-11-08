@@ -513,7 +513,7 @@ article code {
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  background: var(--code-bg);
+  background: #0d1117;
 }
 
 .code-block-header {

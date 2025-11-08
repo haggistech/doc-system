@@ -14,8 +14,7 @@ A lightweight, Docusaurus-like static site generator for creating beautiful docu
 - **Static Site Generation**: Fast, static HTML pages
 - **Responsive Design**: Mobile-friendly interface with optimized touch interactions
 - **Sidebar Navigation**: Automatic navigation generation
-- **Versioning**: Maintain multiple documentation versions like Docusaurus
-- **Git-friendly**: Version control everything
+- **Git-friendly**: Version control everything with GitHub tags for versioning
 - **Easy Deployment**: Deploy to GitHub/GitLab Pages with ease
 
 ## Quick Start
@@ -32,9 +31,6 @@ npm run build
 
 # Serve built site
 npm run serve
-
-# Create a new version
-npm run version 1.0.0
 ```
 
 ## Project Structure
@@ -98,25 +94,6 @@ Your content here...
 ```
 
 3. Update the sidebar in `config.json`
-
-## Versioning
-
-Maintain multiple versions of your documentation, just like Docusaurus:
-
-```bash
-# Create a new version (e.g., 1.0.0)
-npm run version 1.0.0
-```
-
-This will:
-- Copy current `docs/` to `versioned_docs/version-1.0.0/`
-- Save sidebar configuration to `versioned_sidebars/`
-- Update `config.json` with version information
-- Add a version selector dropdown in the navbar
-
-You can continue editing `docs/` for the next version while users can still access older versions via the version dropdown.
-
-**Learn more**: See the [Versioning Guide](docs/guides/versioning.md) for detailed information.
 
 ## Deployment
 

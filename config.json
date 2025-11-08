@@ -4,12 +4,6 @@
   "baseUrl": "/",
   "docsDir": "docs",
   "outputDir": "build",
-  "versions": {
-    "current": "2.0.0",
-    "latest": "2.0.0",
-    "available": ["2.0.0", "1.0.0"]
-  },
-  "versionsDir": "versioned_docs",
   "navbar": {
     "title": "Docs",
     "links": [
@@ -19,7 +13,7 @@
       },
       {
         "label": "GitHub",
-        "href": "https://github.com/yourusername/yourrepo"
+        "href": "https://github.com/haggistech/doc-system"
       }
     ]
   },
@@ -32,10 +26,10 @@
     {
       "type": "category",
       "label": "Guides",
-      "items": ["guides/features", "guides/configuration", "guides/deployment", "guides/versioning"]
+      "items": ["guides/features", "guides/configuration", "guides/deployment"]
     }
   ],
   "footer": {
-    "copyright": "Copyright © 2025 Your Project"
-  }
+    "copyright": "Created with Doc System - Haggistech"
+   }
 }

@@ -7,8 +7,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "dev": "node scripts/dev.js",
-    "serve": "node scripts/serve.js",
-    "version": "node scripts/version.js"
+    "serve": "node scripts/serve.js"
   },
   "keywords": ["documentation", "markdown", "static-site-generator"],
   "author": "",

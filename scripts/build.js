@@ -189,10 +189,7 @@ async function processMarkdown(filePath, baseDir) {
 }
 
 // Generate HTML page
-function generatePage(doc, allDocs, sidebar, version = null) {
-  const versionPath = version ? `${version}/` : '';
-  const versionLabel = version || 'current';
-
+function generatePage(doc, allDocs, sidebar) {
   const template = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -212,7 +209,6 @@ function generatePage(doc, allDocs, sidebar, version = null) {
         <span></span>
       </button>
       <a href="${config.baseUrl}" class="navbar-brand">${config.navbar.title}</a>
-      ${generateVersionDropdown(versionLabel)}
       <div class="search-container">
         <input type="text" id="search-input" class="search-input" placeholder="Search docs..." autocomplete="off">
         <div id="search-results" class="search-results"></div>
@@ -230,11 +226,10 @@ function generatePage(doc, allDocs, sidebar, version = null) {
 
   <div class="container">
     <aside class="sidebar">
-      ${generateSidebar(sidebar, doc.slug, versionPath)}
+      ${generateSidebar(sidebar, doc.slug)}
     </aside>
 
     <main class="content">
-      ${version ? `<div class="version-banner">${version === config.versions.latest ? 'Latest version' : `Version ${version}`}</div>` : ''}
       ${generateBreadcrumbs(sidebar, doc.slug)}
       ${generateMetadataTable(doc.metadata)}
       <article>
@@ -242,7 +237,7 @@ function generatePage(doc, allDocs, sidebar, version = null) {
       </article>
 
       <div class="pagination">
-        ${generatePagination(doc, allDocs, sidebar, versionPath)}
+        ${generatePagination(doc, allDocs, sidebar)}
       </div>
     </main>
   </div>
@@ -254,20 +249,8 @@ function generatePage(doc, allDocs, sidebar, version = null) {
   <script src="${config.baseUrl}search.js"></script>
   <script src="${config.baseUrl}copy-code.js"></script>
   <script>
-    // Version dropdown toggle
+    // Mobile sidebar toggle
     document.addEventListener('DOMContentLoaded', function() {
-      const dropdown = document.querySelector('.version-dropdown');
-      if (dropdown) {
-        dropdown.addEventListener('click', function(e) {
-          e.stopPropagation();
-          this.classList.toggle('open');
-        });
-        document.addEventListener('click', function() {
-          dropdown.classList.remove('open');
-        });
-      }
-
-      // Mobile sidebar toggle
       const sidebarToggle = document.querySelector('.mobile-sidebar-toggle');
       const sidebar = document.querySelector('.sidebar');
       const body = document.body;
@@ -311,28 +294,6 @@ function generatePage(doc, allDocs, sidebar, version = null) {
   return template;
 }
 
-// Generate version dropdown
-function generateVersionDropdown(currentVersion) {
-  if (!config.versions || !config.versions.available || config.versions.available.length === 0) {
-    return '';
-  }
-
-  const versions = config.versions.available;
-
-  return `
-    <div class="version-dropdown">
-      <button class="version-button">v${currentVersion}</button>
-      <div class="version-menu">
-        ${versions.map(v => `
-          <a href="${config.baseUrl}${v === config.versions.current ? 'docs' : v}/intro.html"
-             class="${v === currentVersion ? 'active' : ''}">
-            v${v}${v === config.versions.latest ? ' (latest)' : ''}
-          </a>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
 
 // Generate metadata table
 function generateMetadataTable(metadata) {
@@ -426,7 +387,7 @@ function generateBreadcrumbs(sidebar, currentSlug) {
 }
 
 // Generate sidebar HTML
-function generateSidebar(items, currentSlug, versionPath = '') {
+function generateSidebar(items, currentSlug) {
   let html = '<ul class="sidebar-nav">';
 
   for (const item of items) {
@@ -437,7 +398,7 @@ function generateSidebar(items, currentSlug, versionPath = '') {
 
       for (const subItem of item.items) {
         const isActive = currentSlug === subItem;
-        html += `<li><a href="${config.baseUrl}${versionPath}docs/${subItem}.html" class="${isActive ? 'active' : ''}">${subItem.split('/').pop()}</a></li>`;
+        html += `<li><a href="${config.baseUrl}docs/${subItem}.html" class="${isActive ? 'active' : ''}">${subItem.split('/').pop()}</a></li>`;
       }
 
       html += '</ul></li>';
@@ -449,7 +410,7 @@ function generateSidebar(items, currentSlug, versionPath = '') {
 }
 
 // Generate pagination links
-function generatePagination(currentDoc, allDocs, sidebar, versionPath = '') {
+function generatePagination(currentDoc, allDocs, sidebar) {
   const flatDocs = [];
   for (const item of sidebar) {
     if (item.type === 'category') {
@@ -462,54 +423,31 @@ function generatePagination(currentDoc, allDocs, sidebar, versionPath = '') {
 
   if (currentIndex > 0) {
     const prev = flatDocs[currentIndex - 1];
-    html += `<a href="${config.baseUrl}${versionPath}docs/${prev}.html" class="pagination-prev">← Previous</a>`;
+    html += `<a href="${config.baseUrl}docs/${prev}.html" class="pagination-prev">← Previous</a>`;
   }
 
   if (currentIndex < flatDocs.length - 1) {
     const next = flatDocs[currentIndex + 1];
-    html += `<a href="${config.baseUrl}${versionPath}docs/${next}.html" class="pagination-next">Next →</a>`;
+    html += `<a href="${config.baseUrl}docs/${next}.html" class="pagination-next">Next →</a>`;
   }
 
   return html;
 }
 
-// Build a specific version
-async function buildVersion(version = null) {
-  let docsDir, sidebar;
-  let versionLabel = 'current';
-  let outputPath = '';
+// Build the site
+async function build() {
+  console.log('Building documentation site...');
 
-  if (version) {
-    // Build versioned docs
-    const versionsDir = path.join(rootDir, config.versionsDir || 'versioned_docs');
-    docsDir = path.join(versionsDir, `version-${version}`);
-
-    // Load versioned sidebar
-    const sidebarPath = path.join(rootDir, 'versioned_sidebars', `version-${version}-sidebars.json`);
-    try {
-      sidebar = JSON.parse(await fs.readFile(sidebarPath, 'utf-8'));
-    } catch {
-      console.warn(`Warning: Sidebar not found for version ${version}, using default`);
-      sidebar = config.sidebar;
-    }
-
-    versionLabel = version;
-    outputPath = version;
-    console.log(`Building version ${version}...`);
-  } else {
-    // Build current docs
-    docsDir = path.join(rootDir, config.docsDir);
-    sidebar = config.sidebar;
-    console.log('Building current version...');
-  }
-
+  // Get all markdown files
+  const docsDir = path.join(rootDir, config.docsDir);
   const markdownFiles = await getMarkdownFiles(docsDir);
 
   if (markdownFiles.length === 0) {
     console.log(`No markdown files found in ${docsDir}`);
-    return [];
+    return;
   }
 
+  // Process all markdown files
   const docs = [];
   for (const file of markdownFiles) {
     const doc = await processMarkdown(file, docsDir);
@@ -517,12 +455,12 @@ async function buildVersion(version = null) {
   }
 
   // Create docs output directory
-  const docsOutputDir = path.join(outputDir, outputPath, 'docs');
+  const docsOutputDir = path.join(outputDir, 'docs');
   await fs.mkdir(docsOutputDir, { recursive: true });
 
   // Generate HTML for each doc
   for (const doc of docs) {
-    const html = generatePage(doc, docs, sidebar, outputPath);
+    const html = generatePage(doc, docs, config.sidebar);
     const outputFilePath = path.join(docsOutputDir, `${doc.slug}.html`);
 
     // Create subdirectories if needed
@@ -530,26 +468,7 @@ async function buildVersion(version = null) {
     await fs.writeFile(outputFilePath, html);
   }
 
-  console.log(`✓ Built ${docs.length} pages for ${versionLabel}`);
-
-  return docs;
-}
-
-// Build the site
-async function build() {
-  console.log('Building documentation site...');
-
-  // Build current version
-  const currentDocs = await buildVersion();
-
-  // Build versioned docs
-  if (config.versions && config.versions.available) {
-    for (const version of config.versions.available) {
-      if (version !== config.versions.current) {
-        await buildVersion(version);
-      }
-    }
-  }
+  console.log(`✓ Built ${docs.length} pages`);
 
   // Copy CSS
   const cssSource = path.join(rootDir, 'theme', 'styles.css');
@@ -571,8 +490,8 @@ async function build() {
   const copyCodeTarget = path.join(outputDir, 'copy-code.js');
   await fs.copyFile(copyCodeSource, copyCodeTarget);
 
-  // Generate search index for current version
-  const searchIndex = currentDocs.map(doc => ({
+  // Generate search index
+  const searchIndex = docs.map(doc => ({
     title: doc.title,
     slug: doc.slug,
     description: doc.description
@@ -584,7 +503,7 @@ async function build() {
   );
 
   // Create index.html that redirects to first doc
-  if (currentDocs.length > 0) {
+  if (docs.length > 0) {
     const firstDoc = config.sidebar[0].items[0];
     const indexHtml = `<!DOCTYPE html>
 <html>

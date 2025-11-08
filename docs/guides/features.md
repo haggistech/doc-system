@@ -126,20 +126,6 @@ Results are scored and sorted by relevance, with exact matches and title-start m
 | `Enter` | Open selected result |
 | `Escape` | Close search |
 
-## Versioning
-
-Maintain multiple versions of your documentation simultaneously, similar to Docusaurus.
-
-### Key Benefits
-
-- Keep old documentation accessible
-- Work on next version while current is live
-- Version selector dropdown in navbar
-- Separate directories for each version
-- Clean URL structure (`/2.0.0/docs/page.html`)
-
-See the [Versioning Guide](versioning) for detailed information.
-
 ## Navigation Features
 
 ### Breadcrumb Navigation
@@ -244,7 +230,7 @@ Unordered lists:
 |---------|--------|-------|
 | Search | ✅ | Enhanced UI |
 | Syntax | ✅ | 190+ languages |
-| Versions | ✅ | Like Docusaurus |
+| Git Integration | ✅ | Metadata from commits |
 
 ### Admonitions/Callouts
 
