@@ -13,7 +13,7 @@
       },
       {
         "label": "GitHub",
-        "href": "https://github.com/haggistech/doc-system"
+        "href": "https://github.com/yourusername/yourrepo"
       }
     ]
   },
@@ -30,6 +30,6 @@
     }
   ],
   "footer": {
-    "copyright": "Created with Doc System - Haggistech"
+    "copyright": "Built with ❤️ using Doc System"
    }
 }

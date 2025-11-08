@@ -12,7 +12,6 @@ This guide covers deploying the documentation system using Docker and Kubernetes
   - [Prerequisites](#prerequisites)
   - [Deployment](#deployment)
   - [Configuration](#configuration)
-- [CI/CD](#cicd)
 - [Troubleshooting](#troubleshooting)
 
 ## Docker
@@ -110,19 +109,35 @@ kubectl apply -k k8s/
 
 #### Step-by-Step Deploy
 
-**1. Deploy the application:**
+**1. Build and load the image (for local clusters):**
+
+```bash
+# For minikube
+docker build -t doc-system:latest .
+minikube image load doc-system:latest
+
+# For kind
+docker build -t doc-system:latest .
+kind load docker-image doc-system:latest
+
+# For k3d
+docker build -t doc-system:latest .
+k3d image import doc-system:latest
+```
+
+**2. Deploy the application:**
 
 ```bash
 kubectl apply -f k8s/deployment.yaml
 ```
 
-**2. Create the service:**
+**3. Create the service:**
 
 ```bash
 kubectl apply -f k8s/service.yaml
 ```
 
-**3. (Optional) Create ingress:**
+**4. (Optional) Create ingress:**
 
 First, update `k8s/ingress.yaml` with your domain:
 
@@ -148,7 +163,7 @@ Edit `k8s/deployment.yaml`:
 spec:
   containers:
   - name: doc-system
-    image: ghcr.io/haggistech/doc-system:v1.0.0  # Specify version
+    image: doc-system:v1.0.0  # Specify version
 ```
 
 #### Scale Replicas
@@ -240,63 +255,33 @@ kubectl port-forward svc/doc-system 8080:80
 kubectl delete -k k8s/
 ```
 
-## CI/CD
+## Makefile Commands
 
-### Automated Docker Builds
-
-Docker images are automatically built and pushed to GitHub Container Registry when you create a new tag.
-
-#### Trigger a Build
+Use the Makefile for convenience:
 
 ```bash
-# Create and push a tag (workflow will auto-build)
-git tag -a v1.0.1 -m "Release v1.0.1"
-git push origin v1.0.1
-```
+# Docker commands
+make docker-build       # Build Docker image
+make docker-run         # Run container
+make docker-stop        # Stop container
+make docker-logs        # View logs
 
-The workflow will:
-1. Build multi-architecture images (amd64, arm64)
-2. Push to `ghcr.io/haggistech/doc-system`
-3. Tag as `latest` and version-specific tags
+# Docker Compose commands
+make compose-up         # Start with docker-compose
+make compose-down       # Stop docker-compose
+make compose-logs       # View logs
 
-#### Use the Image
+# Kubernetes commands
+make k8s-deploy         # Deploy to Kubernetes
+make k8s-delete         # Delete from Kubernetes
+make k8s-logs           # View pod logs
+make k8s-status         # Check status
+make k8s-port-forward   # Port forward to localhost
 
-```bash
-# Pull the latest image
-docker pull ghcr.io/haggistech/doc-system:latest
-
-# Pull specific version
-docker pull ghcr.io/haggistech/doc-system:v1.0.0
-
-# Run the image
-docker run -p 8080:80 ghcr.io/haggistech/doc-system:latest
-```
-
-### GitOps Deployment
-
-For continuous deployment with ArgoCD or Flux:
-
-**ArgoCD Application:**
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: doc-system
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/haggistech/doc-system
-    targetRevision: HEAD
-    path: k8s
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+# Other commands
+make build              # Build documentation
+make dev                # Run development server
+make clean              # Clean build artifacts
 ```
 
 ## Troubleshooting
@@ -345,20 +330,28 @@ metadata:
     kubernetes.io/ingress.class: nginx  # Add if needed
 ```
 
-### Image Pull Errors
+### Image Pull Errors in Kubernetes
 
-For private registries, create image pull secret:
+For local images, ensure they're loaded into your cluster:
 
 ```bash
-kubectl create secret docker-registry ghcr-secret \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_TOKEN
+# Minikube
+minikube image load doc-system:latest
 
-# Update deployment
+# Kind
+kind load docker-image doc-system:latest
+
+# k3d
+k3d image import doc-system:latest
+```
+
+Or set imagePullPolicy:
+```yaml
 spec:
-  imagePullSecrets:
-  - name: ghcr-secret
+  containers:
+  - name: doc-system
+    image: doc-system:latest
+    imagePullPolicy: IfNotPresent  # or Never for local images
 ```
 
 ### Health Check Failures
@@ -409,5 +402,7 @@ spec:
 
 - [Docker Documentation](https://docs.docker.com/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 - [nginx Configuration](https://nginx.org/en/docs/)
+- [Minikube](https://minikube.sigs.k8s.io/)
+- [Kind](https://kind.sigs.k8s.io/)
+- [k3d](https://k3d.io/)
