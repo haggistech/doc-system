@@ -1,6 +1,7 @@
 ---
 title: Features
 description: Overview of key features in the documentation system
+author: Documentation Team
 ---
 
 # Features
@@ -145,19 +146,44 @@ On mobile devices and tablets, the sidebar is hidden by default with a hamburger
 - Desktop (>996px): Sidebar always visible
 - Tablet/Mobile (≤996px): Sidebar toggled with hamburger menu
 
-### Last Updated Timestamp
+### Page Metadata Table
 
-Each page shows when it was last modified, automatically extracted from Git history.
+Each page displays a metadata table at the top showing authorship and date information.
 
 **Features:**
-- **Git Integration**: Uses `git log` to find last commit date
-- **Formatted Date**: Displays as "Last updated: Month Day, Year"
-- **Automatic**: No manual updates needed
-- **Graceful Fallback**: Hidden if not in a Git repository
+- **Author**: Can be specified in frontmatter with `author: Name`
+- **Created Date**: Automatically extracted from Git (first commit)
+- **Created By**: Author of the first commit (from Git)
+- **Last Updated**: Date of most recent modification (from Git)
+- **Last Updated By**: Author of most recent commit (from Git)
+- **Smart Display**: Only shows rows with available data
+- **Clean Design**: Bordered table with clear labels and values
 
-The timestamp appears below the article content, helping users know if documentation is current.
+**Example:**
 
-**Note**: Requires the repository to be initialized with Git. If not using Git, the timestamp won't appear.
+```markdown
+---
+title: My Page
+author: John Doe
+---
+
+# Content here...
+```
+
+This will display a table like:
+
+| | |
+|---|---|
+| **Author** | John Doe |
+| **Created** | November 8, 2025 by John Doe |
+| **Last Updated** | November 8, 2025 by John Doe |
+
+**Git Integration:**
+- Uses `git log` to extract creation and update information
+- Gracefully handles non-Git repositories (only shows author if specified)
+- Automatically updates when you commit changes
+
+**Note**: For best results, initialize your repository with Git. Without Git, only the frontmatter `author` field will be displayed.
 
 ## Markdown Support
 
@@ -196,6 +222,62 @@ Unordered lists:
 | Search | ✅ | Enhanced UI |
 | Syntax | ✅ | 190+ languages |
 | Versions | ✅ | Like Docusaurus |
+
+### Admonitions/Callouts
+
+Special formatted blocks to highlight important information, similar to Docusaurus.
+
+**Available Types:**
+
+:::note
+This is a note admonition with the default "Note" title.
+Use it for general information.
+:::
+
+:::tip Custom Tip Title
+This is a tip admonition with a custom title.
+Use it for helpful suggestions.
+:::
+
+:::info
+This is an info admonition.
+Use it for informational content.
+:::
+
+:::warning
+This is a warning admonition.
+Use it to warn users about potential issues.
+:::
+
+:::danger
+This is a danger admonition.
+Use it for critical warnings.
+:::
+
+:::caution
+This is a caution admonition.
+Use it for situations requiring careful attention.
+:::
+
+**Syntax:**
+
+````markdown
+:::note Optional Custom Title
+Your content here. You can use **markdown** inside admonitions.
+
+- Bullet points
+- Code blocks
+- And more!
+:::
+````
+
+**Features:**
+- **6 Types**: note, tip, info, warning, danger, caution
+- **Custom Titles**: Override the default title
+- **Markdown Support**: Full markdown rendering inside admonitions
+- **Icons**: Each type has a distinctive emoji icon
+- **Color-Coded**: Different colors for easy visual identification
+- **Responsive**: Works perfectly on all devices
 
 ### Blockquotes
 

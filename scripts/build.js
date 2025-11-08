@@ -20,6 +20,54 @@ marked.use(markedHighlight({
   }
 }));
 
+// Configure marked with admonitions extension
+marked.use({
+  extensions: [{
+    name: 'admonition',
+    level: 'block',
+    start(src) {
+      return src.match(/^:::/)?.index;
+    },
+    tokenizer(src) {
+      const rule = /^:::(note|tip|info|warning|danger|caution)(?: +(.+?))?\n([\s\S]*?)\n:::/;
+      const match = rule.exec(src);
+      if (match) {
+        return {
+          type: 'admonition',
+          raw: match[0],
+          admonitionType: match[1],
+          title: match[2]?.trim() || null,
+          text: match[3].trim()
+        };
+      }
+    },
+    renderer(token) {
+      const types = {
+        note: { icon: 'ℹ️', label: 'Note' },
+        tip: { icon: '💡', label: 'Tip' },
+        info: { icon: 'ℹ️', label: 'Info' },
+        warning: { icon: '⚠️', label: 'Warning' },
+        danger: { icon: '🚫', label: 'Danger' },
+        caution: { icon: '⚠️', label: 'Caution' }
+      };
+
+      const config = types[token.admonitionType] || types.note;
+      const title = token.title || config.label;
+      const content = marked.parse(token.text);
+
+      return `<div class="admonition admonition-${token.admonitionType}">
+        <div class="admonition-heading">
+          <span class="admonition-icon">${config.icon}</span>
+          <span class="admonition-title">${title}</span>
+        </div>
+        <div class="admonition-content">
+          ${content}
+        </div>
+      </div>`;
+    }
+  }]
+});
+
 // Load configuration
 const config = JSON.parse(await fs.readFile(path.join(rootDir, 'config.json'), 'utf-8'));
 
@@ -49,27 +97,56 @@ async function getMarkdownFiles(dir) {
   return files;
 }
 
-// Get last updated date from git
-function getLastUpdated(filePath) {
+// Get Git metadata for a file
+function getGitMetadata(filePath) {
   try {
-    const timestamp = execSync(
-      `git log -1 --format=%at "${filePath}"`,
-      { encoding: 'utf-8', cwd: rootDir }
+    // Get last updated info (most recent commit)
+    const lastCommit = execSync(
+      `git log -1 --format="%at|%an|%ae" "${filePath}"`,
+      { encoding: 'utf-8', cwd: rootDir, shell: '/bin/bash' }
     ).trim();
 
-    if (timestamp) {
+    // Get creation info (first commit)
+    const firstCommit = execSync(
+      `git log --diff-filter=A --follow --format="%at|%an|%ae" -- "${filePath}"`,
+      { encoding: 'utf-8', cwd: rootDir, shell: '/bin/bash' }
+    ).trim().split('\n').pop(); // Get last line (oldest commit)
+
+    if (!lastCommit) {
+      return null;
+    }
+
+    const formatDate = (timestamp) => {
       const date = new Date(parseInt(timestamp) * 1000);
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
+    };
+
+    const [lastTimestamp, lastAuthor, lastEmail] = lastCommit.split('|');
+    const lastUpdated = formatDate(lastTimestamp);
+
+    let created = null;
+    let createdBy = null;
+
+    if (firstCommit) {
+      const [firstTimestamp, firstAuthor] = firstCommit.split('|');
+      created = formatDate(firstTimestamp);
+      createdBy = firstAuthor;
     }
+
+    return {
+      lastUpdated,
+      lastUpdatedBy: lastAuthor,
+      created,
+      createdBy
+    };
   } catch (err) {
     // Not a git repo or file not tracked
     return null;
   }
-  return null;
 }
 
 // Process markdown file
@@ -81,13 +158,22 @@ async function processMarkdown(filePath, baseDir) {
   const relativePath = path.relative(baseDir, filePath);
   const slug = relativePath.replace(/\.md$/, '').replace(/\\/g, '/');
 
+  // Get Git metadata
+  const gitMetadata = getGitMetadata(filePath);
+
   return {
     slug,
     title: attributes.title || slug,
     description: attributes.description || '',
     html,
     attributes,
-    lastUpdated: getLastUpdated(filePath)
+    metadata: {
+      author: attributes.author || null,
+      created: gitMetadata?.created || null,
+      createdBy: gitMetadata?.createdBy || null,
+      lastUpdated: gitMetadata?.lastUpdated || null,
+      lastUpdatedBy: gitMetadata?.lastUpdatedBy || null
+    }
   };
 }
 
@@ -139,10 +225,10 @@ function generatePage(doc, allDocs, sidebar, version = null) {
     <main class="content">
       ${version ? `<div class="version-banner">${version === config.versions.latest ? 'Latest version' : `Version ${version}`}</div>` : ''}
       ${generateBreadcrumbs(sidebar, doc.slug)}
+      ${generateMetadataTable(doc.metadata)}
       <article>
         ${doc.html}
       </article>
-      ${doc.lastUpdated ? `<div class="last-updated">Last updated: ${doc.lastUpdated}</div>` : ''}
 
       <div class="pagination">
         ${generatePagination(doc, allDocs, sidebar, versionPath)}
@@ -233,6 +319,59 @@ function generateVersionDropdown(currentVersion) {
           </a>
         `).join('')}
       </div>
+    </div>
+  `;
+}
+
+// Generate metadata table
+function generateMetadataTable(metadata) {
+  // Check if we have any metadata to display
+  const hasMetadata = metadata.author || metadata.created || metadata.lastUpdated;
+
+  if (!hasMetadata) {
+    return '';
+  }
+
+  const rows = [];
+
+  if (metadata.author) {
+    rows.push(`
+      <tr>
+        <td class="metadata-label">Author</td>
+        <td class="metadata-value">${metadata.author}</td>
+      </tr>
+    `);
+  }
+
+  if (metadata.created) {
+    const createdText = metadata.createdBy
+      ? `${metadata.created} by ${metadata.createdBy}`
+      : metadata.created;
+    rows.push(`
+      <tr>
+        <td class="metadata-label">Created</td>
+        <td class="metadata-value">${createdText}</td>
+      </tr>
+    `);
+  }
+
+  if (metadata.lastUpdated) {
+    const lastUpdatedText = metadata.lastUpdatedBy
+      ? `${metadata.lastUpdated} by ${metadata.lastUpdatedBy}`
+      : metadata.lastUpdated;
+    rows.push(`
+      <tr>
+        <td class="metadata-label">Last Updated</td>
+        <td class="metadata-value">${lastUpdatedText}</td>
+      </tr>
+    `);
+  }
+
+  return `
+    <div class="metadata-table-wrapper">
+      <table class="metadata-table">
+        ${rows.join('')}
+      </table>
     </div>
   `;
 }

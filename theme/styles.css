@@ -398,7 +398,61 @@ body {
   user-select: none;
 }
 
-/* Last Updated */
+/* Metadata Table */
+.metadata-table-wrapper {
+  margin: 1.5rem 0 2rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--sidebar-bg);
+}
+
+.metadata-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.metadata-table tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.metadata-table tr:last-child {
+  border-bottom: none;
+}
+
+.metadata-table td {
+  padding: 0.75rem 1rem;
+}
+
+.metadata-label {
+  font-weight: 600;
+  color: var(--text-color);
+  width: 150px;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.metadata-value {
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .metadata-table td {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .metadata-label {
+    width: 120px;
+    font-size: 0.8125rem;
+  }
+
+  .metadata-value {
+    font-size: 0.8125rem;
+  }
+}
+
+/* Last Updated (deprecated - now in metadata table) */
 .last-updated {
   margin-top: 2rem;
   padding-top: 1.5rem;
@@ -583,6 +637,107 @@ article td {
 article th {
   background: var(--sidebar-bg);
   font-weight: 600;
+}
+
+/* Admonitions/Callouts */
+.admonition {
+  margin: 1.5rem 0;
+  border-left: 4px solid;
+  border-radius: 6px;
+  background: var(--sidebar-bg);
+  overflow: hidden;
+}
+
+.admonition-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.admonition-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.admonition-content {
+  padding: 0 1rem 0.75rem 1rem;
+}
+
+.admonition-content > *:first-child {
+  margin-top: 0;
+}
+
+.admonition-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Note Admonition */
+.admonition-note {
+  border-left-color: #2563eb;
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.admonition-note .admonition-heading {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+/* Tip Admonition */
+.admonition-tip {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.admonition-tip .admonition-heading {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Info Admonition */
+.admonition-info {
+  border-left-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.05);
+}
+
+.admonition-info .admonition-heading {
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+/* Warning Admonition */
+.admonition-warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.admonition-warning .admonition-heading {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* Danger Admonition */
+.admonition-danger {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.admonition-danger .admonition-heading {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Caution Admonition */
+.admonition-caution {
+  border-left-color: #f97316;
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.admonition-caution .admonition-heading {
+  color: #ea580c;
+  background: rgba(249, 115, 22, 0.1);
 }
 
 /* Pagination */
