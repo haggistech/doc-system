@@ -631,11 +631,28 @@ async function build() {
   const copyCodeTarget = path.join(outputDir, 'copy-code.js');
   await fs.copyFile(copyCodeSource, copyCodeTarget);
 
-  // Generate search index
-  const searchIndex = docs.map(doc => ({
-    title: doc.title,
-    slug: doc.slug,
-    description: doc.description
+  // Generate search index with full content
+  const searchIndex = await Promise.all(docs.map(async doc => {
+    // Read the original markdown content for full-text search
+    const content = await fs.readFile(doc.filePath, 'utf-8');
+    const { body } = fm(content);
+
+    // Strip markdown formatting for cleaner search
+    const plainText = body
+      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+      .replace(/`[^`]+`/g, '') // Remove inline code
+      .replace(/#{1,6}\s+/g, '') // Remove headings
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+      .replace(/[*_~]/g, '') // Remove emphasis markers
+      .replace(/\n+/g, ' ') // Replace newlines with spaces
+      .trim();
+
+    return {
+      title: doc.title,
+      slug: doc.slug,
+      description: doc.description,
+      content: plainText
+    };
   }));
 
   await fs.writeFile(
