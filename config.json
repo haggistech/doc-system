@@ -17,18 +17,6 @@
       }
     ]
   },
-  "sidebar": [
-    {
-      "type": "category",
-      "label": "Getting Started",
-      "items": ["intro", "installation"]
-    },
-    {
-      "type": "category",
-      "label": "Guides",
-      "items": ["guides/features", "guides/configuration", "guides/deployment"]
-    }
-  ],
   "footer": {
     "copyright": "Built with ❤️ using Doc System"
    }
