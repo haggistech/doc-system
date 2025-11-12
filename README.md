@@ -8,20 +8,36 @@ A lightweight, Docusaurus-like static site generator for creating beautiful docu
 - **Syntax Highlighting**: Beautiful code blocks with 190+ language support via Highlight.js
 - **Copy Code Button**: One-click copy with visual feedback on all code blocks
 - **Enhanced Search**: Instant search with keyboard navigation, smart scoring, and highlighted matches
+- **Internal Link Validation**: Automatic detection of broken internal links during build
 - **Mobile Sidebar Toggle**: Hamburger menu with smooth slide-in animation for mobile devices
 - **Breadcrumb Navigation**: Automatic breadcrumbs showing current location in documentation
 - **Last Updated Timestamp**: Auto-generated from Git history on each page
 - **Static Site Generation**: Fast, static HTML pages
 - **Responsive Design**: Mobile-friendly interface with optimized touch interactions
 - **Sidebar Navigation**: Automatic navigation generation
+- **Comprehensive Test Suite**: 49+ unit and integration tests with coverage reporting
 - **Git-friendly**: Version control everything with GitHub tags for versioning
 - **Easy Deployment**: Deploy to GitHub/GitLab Pages with ease
+
+## Requirements
+
+- **Node.js**: >= 22.0.0 (LTS recommended)
+- **npm**: >= 10.0.0
+
+If using NVM, you can install and use the correct version:
+```bash
+nvm install 22
+nvm use
+```
 
 ## Quick Start
 
 ```bash
 # Install dependencies
 npm install
+
+# Run tests
+npm test
 
 # Start development server
 npm run dev
@@ -66,16 +82,15 @@ Edit `config.json` to customize your site:
   "navbar": {
     "title": "Docs",
     "links": [...]
-  },
-  "sidebar": [
-    {
-      "type": "category",
-      "label": "Getting Started",
-      "items": ["intro", "installation"]
-    }
-  ]
+  }
 }
 ```
+
+**Note:** The sidebar is automatically generated from your folder structure in the `docs/` directory:
+- Root-level markdown files appear under "Getting Started"
+- Subdirectories become separate categories (e.g., `docs/guides/` → "Guides" category)
+- Files are listed alphabetically within each category
+- Titles come from the `title:` field in each file's frontmatter
 
 ## Creating Documentation
 

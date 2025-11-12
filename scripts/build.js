@@ -160,6 +160,65 @@ function getGitMetadata(filePath) {
   }
 }
 
+// Extract internal links from markdown content
+function extractInternalLinks(content) {
+  const links = [];
+  // Match markdown links: [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    const url = match[2];
+    // Only capture relative links (internal links)
+    // Ignore external URLs, anchors, and absolute paths starting with http/https
+    if (!url.startsWith('http://') &&
+        !url.startsWith('https://') &&
+        !url.startsWith('#') &&
+        !url.startsWith('mailto:')) {
+      links.push({
+        text: match[1],
+        url: url,
+        position: match.index
+      });
+    }
+  }
+
+  return links;
+}
+
+// Validate internal links in a markdown file
+async function validateInternalLinks(filePath, baseDir, allFiles) {
+  const content = await fs.readFile(filePath, 'utf-8');
+  const { body } = fm(content);
+  const links = extractInternalLinks(body);
+  const brokenLinks = [];
+
+  for (const link of links) {
+    // Resolve the link relative to the current file
+    const fileDir = path.dirname(filePath);
+    let targetPath = path.resolve(fileDir, link.url);
+
+    // Normalize path for cross-platform compatibility
+    targetPath = targetPath.replace(/\\/g, '/');
+
+    // Check if target file exists in our markdown files list
+    const exists = allFiles.some(file => {
+      const normalizedFile = file.replace(/\\/g, '/');
+      return normalizedFile === targetPath;
+    });
+
+    if (!exists) {
+      brokenLinks.push({
+        file: path.relative(baseDir, filePath),
+        link: link.url,
+        text: link.text
+      });
+    }
+  }
+
+  return brokenLinks;
+}
+
 // Process markdown file
 async function processMarkdown(filePath, baseDir) {
   const content = await fs.readFile(filePath, 'utf-8');
@@ -178,6 +237,7 @@ async function processMarkdown(filePath, baseDir) {
     description: attributes.description || '',
     html,
     attributes,
+    filePath, // Add filePath for link validation
     metadata: {
       author: attributes.author || null,
       created: gitMetadata?.created || null,
@@ -226,11 +286,11 @@ function generatePage(doc, allDocs, sidebar) {
 
   <div class="container">
     <aside class="sidebar">
-      ${generateSidebar(sidebar, doc.slug)}
+      ${generateSidebar(sidebar, doc.slug, allDocs)}
     </aside>
 
     <main class="content">
-      ${generateBreadcrumbs(sidebar, doc.slug)}
+      ${generateBreadcrumbs(sidebar, doc.slug, doc)}
       ${generateMetadataTable(doc.metadata)}
       <article>
         ${doc.html}
@@ -349,7 +409,7 @@ function generateMetadataTable(metadata) {
 }
 
 // Generate breadcrumb navigation
-function generateBreadcrumbs(sidebar, currentSlug) {
+function generateBreadcrumbs(sidebar, currentSlug, currentDoc) {
   const breadcrumbs = [{ label: 'Home', href: config.baseUrl }];
 
   for (const item of sidebar) {
@@ -357,9 +417,8 @@ function generateBreadcrumbs(sidebar, currentSlug) {
       for (const subItem of item.items) {
         if (subItem === currentSlug) {
           breadcrumbs.push({ label: item.label, href: null });
-          // Use slug's last part as page name if no frontmatter title
-          const pageName = currentSlug.split('/').pop();
-          breadcrumbs.push({ label: pageName, href: null });
+          // Use document title from frontmatter
+          breadcrumbs.push({ label: currentDoc.title, href: null });
           break;
         }
       }
@@ -387,18 +446,28 @@ function generateBreadcrumbs(sidebar, currentSlug) {
 }
 
 // Generate sidebar HTML
-function generateSidebar(items, currentSlug) {
+function generateSidebar(items, currentSlug, allDocs) {
   let html = '<ul class="sidebar-nav">';
+
+  // Create a map of slugs to doc titles for quick lookup
+  const docTitleMap = {};
+  for (const doc of allDocs) {
+    docTitleMap[doc.slug] = doc.title;
+  }
 
   for (const item of items) {
     if (item.type === 'category') {
-      html += `<li class="sidebar-category">
+      // Check if any item in this category is active
+      const hasActiveChild = item.items.some(subItem => currentSlug === subItem);
+
+      html += `<li class="sidebar-category ${hasActiveChild ? 'active' : ''}">
         <div class="sidebar-category-label">${item.label}</div>
         <ul class="sidebar-category-items">`;
 
       for (const subItem of item.items) {
         const isActive = currentSlug === subItem;
-        html += `<li><a href="${config.baseUrl}docs/${subItem}.html" class="${isActive ? 'active' : ''}">${subItem.split('/').pop()}</a></li>`;
+        const title = docTitleMap[subItem] || subItem.split('/').pop();
+        html += `<li><a href="${config.baseUrl}docs/${subItem}.html" class="${isActive ? 'active' : ''}">${title}</a></li>`;
       }
 
       html += '</ul></li>';
@@ -434,6 +503,56 @@ function generatePagination(currentDoc, allDocs, sidebar) {
   return html;
 }
 
+// Generate sidebar structure from folder/file structure
+function generateSidebarFromFiles(docs, docsDir) {
+  const sidebar = [];
+  const rootDocs = [];
+  const categories = {};
+
+  // Organize docs by directory
+  for (const doc of docs) {
+    const parts = doc.slug.split('/');
+
+    if (parts.length === 1) {
+      // Root level document
+      rootDocs.push(doc.slug);
+    } else {
+      // Document in a subdirectory
+      const category = parts[0];
+      if (!categories[category]) {
+        categories[category] = [];
+      }
+      categories[category].push(doc.slug);
+    }
+  }
+
+  // Add root level docs as a category if they exist
+  if (rootDocs.length > 0) {
+    sidebar.push({
+      type: 'category',
+      label: 'Getting Started',
+      items: rootDocs.sort()
+    });
+  }
+
+  // Add each subdirectory as a category
+  for (const [categoryName, items] of Object.entries(categories).sort()) {
+    // Capitalize and format category name (e.g., 'guides' -> 'Guides')
+    const label = categoryName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    sidebar.push({
+      type: 'category',
+      label,
+      items: items.sort()
+    });
+  }
+
+  return sidebar;
+}
+
 // Build the site
 async function build() {
   console.log('Building documentation site...');
@@ -454,13 +573,35 @@ async function build() {
     docs.push(doc);
   }
 
+  // Validate internal links
+  console.log('Validating internal links...');
+  let allBrokenLinks = [];
+  for (const file of markdownFiles) {
+    const brokenLinks = await validateInternalLinks(file, docsDir, markdownFiles);
+    allBrokenLinks.push(...brokenLinks);
+  }
+
+  if (allBrokenLinks.length > 0) {
+    console.warn('\n⚠️  Warning: Found broken internal links:');
+    for (const broken of allBrokenLinks) {
+      console.warn(`  - ${broken.file}: "${broken.text}" -> ${broken.link}`);
+    }
+    console.warn(`\nTotal broken links: ${allBrokenLinks.length}\n`);
+  } else {
+    console.log('✓ All internal links are valid');
+  }
+
+  // Generate sidebar from file structure
+  const sidebar = generateSidebarFromFiles(docs, docsDir);
+  console.log('✓ Generated sidebar from folder structure');
+
   // Create docs output directory
   const docsOutputDir = path.join(outputDir, 'docs');
   await fs.mkdir(docsOutputDir, { recursive: true });
 
   // Generate HTML for each doc
   for (const doc of docs) {
-    const html = generatePage(doc, docs, config.sidebar);
+    const html = generatePage(doc, docs, sidebar);
     const outputFilePath = path.join(docsOutputDir, `${doc.slug}.html`);
 
     // Create subdirectories if needed
@@ -503,8 +644,8 @@ async function build() {
   );
 
   // Create index.html that redirects to first doc
-  if (docs.length > 0) {
-    const firstDoc = config.sidebar[0].items[0];
+  if (docs.length > 0 && sidebar.length > 0) {
+    const firstDoc = sidebar[0].items[0];
     const indexHtml = `<!DOCTYPE html>
 <html>
 <head>

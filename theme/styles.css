@@ -320,6 +320,10 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.sidebar-category.active .sidebar-category-label {
+  color: var(--primary-color);
+}
+
 .sidebar-category-label {
   font-weight: 600;
   font-size: 0.875rem;

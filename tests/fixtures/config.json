@@ -1,0 +1,27 @@
+{
+  "title": "Test Documentation",
+  "tagline": "Testing the doc system",
+  "url": "https://example.com",
+  "navLinks": [
+    {
+      "label": "GitHub",
+      "url": "https://github.com/test/test"
+    }
+  ],
+  "sidebar": [
+    {
+      "label": "Getting Started",
+      "items": [
+        { "label": "Introduction", "path": "/docs/intro" },
+        { "label": "Installation", "path": "/docs/installation" }
+      ]
+    },
+    {
+      "label": "Guides",
+      "items": [
+        { "label": "Configuration", "path": "/docs/guides/configuration" },
+        { "label": "Features", "path": "/docs/guides/features" }
+      ]
+    }
+  ]
+}
