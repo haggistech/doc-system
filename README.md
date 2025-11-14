@@ -1,5 +1,7 @@
 # Documentation System
 
+[![CI](https://github.com/haggistech/doc-system/actions/workflows/ci.yml/badge.svg)](https://github.com/haggistech/doc-system/actions/workflows/ci.yml)
+[![Deploy](https://github.com/haggistech/doc-system/actions/workflows/deploy.yml/badge.svg)](https://github.com/haggistech/doc-system/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen.svg)](https://github.com/haggistech/doc-system)
@@ -134,32 +136,25 @@ Your content here...
 
 ## Deployment
 
-### GitHub Pages
+### GitHub Pages (Automated)
 
-Create `.github/workflows/deploy.yml`:
+This project includes automated CI/CD workflows:
 
-```yaml
-name: Deploy to GitHub Pages
+**Setup Steps:**
+1. Go to your repository **Settings** → **Pages**
+2. Under "Build and deployment", select **Source**: `GitHub Actions`
+3. Push to `master` branch - deployment happens automatically!
 
-on:
-  push:
-    branches: [main]
+**What happens:**
+- ✅ Tests run on every push and PR
+- ✅ Build verification on commits
+- ✅ Automatic deployment to GitHub Pages on master
+- ✅ Build reports and statistics
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm install
-      - run: npm run build
-      - uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
-```
+The included workflows (`.github/workflows/`):
+- `ci.yml` - Runs tests, builds, security audits
+- `deploy.yml` - Deploys to GitHub Pages
+- `smart-tag.yml` - Automatic version tagging
 
 ### GitLab Pages
 
