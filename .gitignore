@@ -1,5 +1,6 @@
 node_modules/
 build/
+coverage/
 .DS_Store
 
 # Versioned documentation (keep in git for deployment)
