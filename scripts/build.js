@@ -219,6 +219,110 @@ async function validateInternalLinks(filePath, baseDir, allFiles) {
   return brokenLinks;
 }
 
+// Extract image references from markdown content
+function extractImageReferences(content) {
+  const images = [];
+
+  // Match markdown image syntax: ![alt](path)
+  const markdownImageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  let match;
+
+  while ((match = markdownImageRegex.exec(content)) !== null) {
+    const imagePath = match[2];
+    // Only include local images (not URLs)
+    if (!imagePath.startsWith('http://') && !imagePath.startsWith('https://')) {
+      images.push({
+        alt: match[1],
+        path: imagePath.split('?')[0].split('#')[0] // Remove query params and anchors
+      });
+    }
+  }
+
+  // Also match HTML img tags: <img src="path">
+  const htmlImageRegex = /<img[^>]+src=["']([^"']+)["']/g;
+  while ((match = htmlImageRegex.exec(content)) !== null) {
+    const imagePath = match[1];
+    if (!imagePath.startsWith('http://') && !imagePath.startsWith('https://')) {
+      images.push({
+        alt: '',
+        path: imagePath.split('?')[0].split('#')[0]
+      });
+    }
+  }
+
+  return images;
+}
+
+// Copy images and validate image references
+async function processImages(docs, docsDir, outputDir) {
+  const imageSet = new Set();
+  const brokenImages = [];
+  const copiedImages = [];
+
+  // Create images directory in output
+  const imagesOutputDir = path.join(outputDir, 'images');
+  await fs.mkdir(imagesOutputDir, { recursive: true });
+
+  // Process each document
+  for (const doc of docs) {
+    const content = await fs.readFile(doc.filePath, 'utf-8');
+    const { body } = fm(content);
+    const images = extractImageReferences(body);
+
+    for (const image of images) {
+      const docDir = path.dirname(doc.filePath);
+      let imagePath;
+
+      // Handle absolute paths from docs root (e.g., /images/foo.png)
+      if (image.path.startsWith('/')) {
+        imagePath = path.join(docsDir, '..', image.path);
+      } else {
+        // Handle relative paths
+        imagePath = path.resolve(docDir, image.path);
+      }
+
+      imagePath = imagePath.replace(/\\/g, '/');
+
+      // Check if image exists
+      try {
+        await fs.access(imagePath);
+
+        // Add to set for copying
+        const imageRelativePath = path.relative(path.join(docsDir, '..'), imagePath);
+        imageSet.add(JSON.stringify({
+          source: imagePath,
+          relative: imageRelativePath.replace(/\\/g, '/')
+        }));
+      } catch (err) {
+        // Image doesn't exist
+        brokenImages.push({
+          file: path.relative(docsDir, doc.filePath),
+          image: image.path,
+          alt: image.alt
+        });
+      }
+    }
+  }
+
+  // Copy all unique images
+  for (const imageJson of imageSet) {
+    const { source, relative } = JSON.parse(imageJson);
+    const targetPath = path.join(outputDir, relative);
+
+    // Create directory if needed
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+
+    try {
+      await fs.copyFile(source, targetPath);
+      copiedImages.push(relative);
+    } catch (err) {
+      console.warn(`⚠ Warning: Failed to copy image ${relative}: ${err.message}`);
+    }
+  }
+
+  return { copiedImages, brokenImages };
+}
+
 // Process markdown file
 async function processMarkdown(filePath, baseDir) {
   const content = await fs.readFile(filePath, 'utf-8');
@@ -248,8 +352,64 @@ async function processMarkdown(filePath, baseDir) {
   };
 }
 
+// Generate Table of Contents from HTML headings
+function generateTableOfContents(html) {
+  const headings = [];
+  const headingRegex = /<h([2-3])[^>]*>(.+?)<\/h\1>/g;
+  let match;
+  let idCounter = 0;
+
+  // Extract all h2 and h3 headings
+  while ((match = headingRegex.exec(html)) !== null) {
+    const level = parseInt(match[1]);
+    const text = match[2]
+      .replace(/<[^>]+>/g, '') // Strip HTML tags
+      .trim();
+
+    // Generate ID from heading text
+    const id = `heading-${idCounter++}`;
+
+    headings.push({
+      level,
+      text,
+      id
+    });
+  }
+
+  // If no headings, return empty TOC
+  if (headings.length === 0) {
+    return { tocHtml: '', processedHtml: html };
+  }
+
+  // Add IDs to the actual HTML headings
+  let processedHtml = html;
+  let currentId = 0;
+  processedHtml = processedHtml.replace(/<h([2-3])([^>]*)>(.+?)<\/h\1>/g, (match, level, attrs, text) => {
+    const id = `heading-${currentId++}`;
+    return `<h${level}${attrs} id="${id}">${text}</h${level}>`;
+  });
+
+  // Generate TOC HTML
+  let tocHtml = '<nav class="toc">\n';
+  tocHtml += '  <div class="toc-header">On This Page</div>\n';
+  tocHtml += '  <ul class="toc-list">\n';
+
+  for (const heading of headings) {
+    const className = heading.level === 2 ? 'toc-item toc-h2' : 'toc-item toc-h3';
+    tocHtml += `    <li class="${className}"><a href="#${heading.id}">${heading.text}</a></li>\n`;
+  }
+
+  tocHtml += '  </ul>\n';
+  tocHtml += '</nav>';
+
+  return { tocHtml, processedHtml };
+}
+
 // Generate HTML page
 function generatePage(doc, allDocs, sidebar) {
+  // Generate TOC from document HTML
+  const { tocHtml, processedHtml } = generateTableOfContents(doc.html);
+
   const template = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,6 +419,7 @@ function generatePage(doc, allDocs, sidebar) {
   <meta name="description" content="${doc.description || config.description}">
   <link rel="stylesheet" href="${config.baseUrl}styles.css">
   <link rel="stylesheet" href="${config.baseUrl}highlight.css">
+  <script src="${config.baseUrl}dark-mode.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -280,6 +441,22 @@ function generatePage(doc, allDocs, sidebar) {
           }
           return `<a href="${config.baseUrl}${link.to.replace(/^\//, '')}.html">${link.label}</a>`;
         }).join('')}
+        <button class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="moon-icon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
       </div>
     </div>
   </nav>
@@ -293,13 +470,15 @@ function generatePage(doc, allDocs, sidebar) {
       ${generateBreadcrumbs(sidebar, doc.slug, doc)}
       ${generateMetadataTable(doc.metadata)}
       <article>
-        ${doc.html}
+        ${processedHtml}
       </article>
 
       <div class="pagination">
         ${generatePagination(doc, allDocs, sidebar)}
       </div>
     </main>
+
+    ${tocHtml ? `<aside class="toc-sidebar">${tocHtml}</aside>` : ''}
   </div>
 
   <footer class="footer">
@@ -308,6 +487,7 @@ function generatePage(doc, allDocs, sidebar) {
 
   <script src="${config.baseUrl}search.js"></script>
   <script src="${config.baseUrl}copy-code.js"></script>
+  <script src="${config.baseUrl}toc.js"></script>
   <script>
     // Mobile sidebar toggle
     document.addEventListener('DOMContentLoaded', function() {
@@ -630,6 +810,31 @@ async function build() {
   const copyCodeSource = path.join(rootDir, 'theme', 'copy-code.js');
   const copyCodeTarget = path.join(outputDir, 'copy-code.js');
   await fs.copyFile(copyCodeSource, copyCodeTarget);
+
+  // Copy TOC script
+  const tocSource = path.join(rootDir, 'theme', 'toc.js');
+  const tocTarget = path.join(outputDir, 'toc.js');
+  await fs.copyFile(tocSource, tocTarget);
+
+  // Copy dark mode script
+  const darkModeSource = path.join(rootDir, 'theme', 'dark-mode.js');
+  const darkModeTarget = path.join(outputDir, 'dark-mode.js');
+  await fs.copyFile(darkModeSource, darkModeTarget);
+
+  // Process and copy images
+  console.log('\nProcessing images...');
+  const { copiedImages, brokenImages } = await processImages(docs, docsDir, outputDir);
+
+  if (copiedImages.length > 0) {
+    console.log(`✓ Copied ${copiedImages.length} images`);
+  }
+
+  if (brokenImages.length > 0) {
+    console.log('\n⚠ Broken image references found:');
+    for (const broken of brokenImages) {
+      console.log(`  - ${broken.file}: ${broken.image}`);
+    }
+  }
 
   // Generate search index with full content
   const searchIndex = await Promise.all(docs.map(async doc => {
