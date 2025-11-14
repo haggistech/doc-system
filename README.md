@@ -1,23 +1,45 @@
 # Documentation System
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen.svg)](https://github.com/haggistech/doc-system)
+[![Built with](https://img.shields.io/badge/built%20with-Node.js-339933?logo=node.js)](https://nodejs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/haggistech/doc-system/pulls)
+
 A lightweight, Docusaurus-like static site generator for creating beautiful documentation sites that can be hosted on GitHub Pages or GitLab Pages.
 
 ## Features
 
-- **Markdown-based**: Write documentation in simple Markdown
+### 🎨 Modern UI/UX
+- **Dark Mode**: Automatic theme detection with manual toggle, smooth transitions, and localStorage persistence
+- **Responsive Design**: Mobile-first design that works beautifully on all devices
+- **Mobile Sidebar Toggle**: Hamburger menu with smooth slide-in animation
+- **Table of Contents**: Auto-generated TOC with scroll spy for easy navigation
+
+### 📝 Content & Authoring
+- **Markdown-based**: Write documentation in simple Markdown with frontmatter support
 - **Syntax Highlighting**: Beautiful code blocks with 190+ language support via Highlight.js
 - **Copy Code Button**: One-click copy with visual feedback on all code blocks
-- **Enhanced Search**: Instant search with keyboard navigation, smart scoring, and highlighted matches
-- **Internal Link Validation**: Automatic detection of broken internal links during build
-- **Mobile Sidebar Toggle**: Hamburger menu with smooth slide-in animation for mobile devices
-- **Breadcrumb Navigation**: Automatic breadcrumbs showing current location in documentation
-- **Last Updated Timestamp**: Auto-generated from Git history on each page
-- **Static Site Generation**: Fast, static HTML pages
-- **Responsive Design**: Mobile-friendly interface with optimized touch interactions
-- **Sidebar Navigation**: Automatic navigation generation
-- **Comprehensive Test Suite**: 49+ unit and integration tests with coverage reporting
+- **Image Support**: Automatic image copying with validation and broken image detection
+- **Admonitions**: Note, warning, tip, danger, and info callouts
+
+### 🔍 Search & Navigation
+- **Enhanced Search**: Full-text search with content previews and recent searches
+- **Keyboard Shortcuts**: `Ctrl/Cmd + K` to search, arrow keys to navigate
+- **Breadcrumb Navigation**: Automatic breadcrumbs showing current location
+- **Auto-Generated Sidebar**: Sidebar built from folder structure automatically
+
+### 🛠️ Developer Experience
+- **Internal Link Validation**: Automatic detection of broken links during build
+- **Git Metadata**: Last updated timestamps auto-generated from Git history
+- **Hot Reload**: Development server with automatic rebuilding
+- **Comprehensive Test Suite**: 90 unit and integration tests with 100% pass rate
+- **Static Site Generation**: Fast, optimized static HTML pages
+
+### 🚀 Deployment
 - **Git-friendly**: Version control everything with GitHub tags for versioning
 - **Easy Deployment**: Deploy to GitHub/GitLab Pages with ease
+- **Docker Ready**: Containerized deployment support
 
 ## Requirements
 
