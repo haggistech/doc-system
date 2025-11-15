@@ -735,6 +735,47 @@ article code {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Code Block Title (for filenames) */
+.code-block-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.code-block-title::before {
+  content: '📄';
+  font-size: 1rem;
+}
+
+/* Toggle Line Numbers Button */
+.toggle-line-numbers {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.375rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toggle-line-numbers:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #e5e7eb;
+}
+
+.toggle-line-numbers svg {
+  width: 16px;
+  height: 16px;
+}
+
 .code-block-container pre {
   background: transparent;
   padding: 1rem;
@@ -840,6 +881,49 @@ article pre code {
   .copy-code-button {
     opacity: 1;
   }
+}
+
+/* Line Numbers and Line Highlighting */
+.code-line {
+  display: block;
+  padding-left: 0;
+  padding-right: 1rem;
+  position: relative;
+}
+
+/* Line numbers (shown when .show-line-numbers is on pre) */
+.show-line-numbers .code-line::before {
+  content: attr(data-line);
+  display: inline-block;
+  width: 3em;
+  text-align: right;
+  margin-right: 1.5rem;
+  color: #6b7280;
+  user-select: none;
+  border-right: 1px solid #374151;
+  padding-right: 1rem;
+}
+
+/* Hide line numbers when toggle is off */
+.hide-line-numbers .code-line::before {
+  display: none;
+}
+
+/* Highlighted lines */
+.code-line.highlighted-line {
+  background: rgba(96, 165, 250, 0.15);
+  border-left: 3px solid #60a5fa;
+  display: block;
+}
+
+.code-line.highlighted-line::before {
+  border-left: 3px solid #60a5fa;
+  margin-left: -3px;
+}
+
+/* Adjust padding when line numbers are shown */
+.show-line-numbers code {
+  padding-left: 0;
 }
 
 article {

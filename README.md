@@ -20,7 +20,7 @@ A lightweight, Docusaurus-like static site generator for creating beautiful docu
 
 ### 📝 Content & Authoring
 - **Markdown-based**: Write documentation in simple Markdown with frontmatter support
-- **Syntax Highlighting**: Beautiful code blocks with 190+ language support via Highlight.js
+- **Enhanced Code Blocks**: Syntax highlighting with 190+ languages, code block titles, line highlighting, and toggleable line numbers
 - **Copy Code Button**: One-click copy with visual feedback on all code blocks
 - **Image Support**: Automatic image copying with validation and broken image detection
 - **Admonitions**: Note, warning, tip, danger, and info callouts

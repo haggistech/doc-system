@@ -15,17 +15,79 @@ marked.use({
   renderer: {
     code(code, infostring) {
       const lang = infostring || 'plaintext';
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+
+      // Parse enhanced syntax: language title="filename" {1,3-5}
+      // Examples:
+      //   javascript title="config.js"
+      //   python {1,3-5}
+      //   typescript title="app.ts" {2,4-6}
+      let title = null;
+      let highlightLines = [];
+      let cleanLang = lang;
+
+      // Extract title: title="filename.js"
+      const titleMatch = lang.match(/title="([^"]+)"/);
+      if (titleMatch) {
+        title = titleMatch[1];
+        cleanLang = cleanLang.replace(/title="[^"]+"/, '').trim();
+      }
+
+      // Extract line highlights: {1,3-5,7}
+      const highlightMatch = lang.match(/\{([^}]+)\}/);
+      if (highlightMatch) {
+        const ranges = highlightMatch[1].split(',');
+        ranges.forEach(range => {
+          if (range.includes('-')) {
+            // Range: 3-5
+            const [start, end] = range.split('-').map(n => parseInt(n.trim()));
+            for (let i = start; i <= end; i++) {
+              highlightLines.push(i);
+            }
+          } else {
+            // Single line: 1
+            highlightLines.push(parseInt(range.trim()));
+          }
+        });
+        cleanLang = cleanLang.replace(/\{[^}]+\}/, '').trim();
+      }
+
+      // Get the actual language for highlighting
+      const language = hljs.getLanguage(cleanLang) ? cleanLang : 'plaintext';
       const highlighted = hljs.highlight(code, { language }).value;
 
       // Format language name for display (capitalize first letter)
-      const displayLang = lang.charAt(0).toUpperCase() + lang.slice(1);
+      const displayLang = cleanLang.charAt(0).toUpperCase() + cleanLang.slice(1);
 
-      return `<div class="code-block-container">
+      // Split code into lines for line highlighting and line numbers
+      const lines = highlighted.split('\n');
+      const numberedLines = lines.map((line, index) => {
+        const lineNum = index + 1;
+        const isHighlighted = highlightLines.includes(lineNum);
+        const highlightClass = isHighlighted ? ' highlighted-line' : '';
+        return `<span class="code-line${highlightClass}" data-line="${lineNum}">${line}</span>`;
+      }).join('\n');
+
+      // Build header content
+      let headerContent = `<span class="code-block-language">${displayLang}</span>`;
+      if (title) {
+        headerContent = `<span class="code-block-title">${title}</span>`;
+      }
+
+      return `<div class="code-block-container" data-language="${cleanLang}">
   <div class="code-block-header">
-    <span class="code-block-language">${displayLang}</span>
+    ${headerContent}
+    <button class="toggle-line-numbers" aria-label="Toggle line numbers" title="Toggle line numbers">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="4" y1="3" x2="14" y2="3"></line>
+        <line x1="4" y1="8" x2="14" y2="8"></line>
+        <line x1="4" y1="13" x2="14" y2="13"></line>
+        <text x="1" y="5" font-size="6" fill="currentColor">1</text>
+        <text x="1" y="10" font-size="6" fill="currentColor">2</text>
+        <text x="1" y="15" font-size="6" fill="currentColor">3</text>
+      </svg>
+    </button>
   </div>
-  <pre><code class="hljs language-${lang}">${highlighted}</code></pre>
+  <pre class="show-line-numbers"><code class="hljs language-${cleanLang}">${numberedLines}</code></pre>
 </div>`;
     }
   }
@@ -488,6 +550,7 @@ function generatePage(doc, allDocs, sidebar) {
   <script src="${config.baseUrl}search.js"></script>
   <script src="${config.baseUrl}copy-code.js"></script>
   <script src="${config.baseUrl}toc.js"></script>
+  <script src="${config.baseUrl}line-numbers.js"></script>
   <script>
     // Mobile sidebar toggle
     document.addEventListener('DOMContentLoaded', function() {
@@ -820,6 +883,11 @@ async function build() {
   const darkModeSource = path.join(rootDir, 'theme', 'dark-mode.js');
   const darkModeTarget = path.join(outputDir, 'dark-mode.js');
   await fs.copyFile(darkModeSource, darkModeTarget);
+
+  // Copy line numbers script
+  const lineNumbersSource = path.join(rootDir, 'theme', 'line-numbers.js');
+  const lineNumbersTarget = path.join(outputDir, 'line-numbers.js');
+  await fs.copyFile(lineNumbersSource, lineNumbersTarget);
 
   // Process and copy images
   console.log('\nProcessing images...');
