@@ -65,7 +65,7 @@ marked.use({
         const isHighlighted = highlightLines.includes(lineNum);
         const highlightClass = isHighlighted ? ' highlighted-line' : '';
         return `<span class="code-line${highlightClass}" data-line="${lineNum}">${line}</span>`;
-      }).join('\n');
+      }).join('');
 
       // Build header content
       let headerContent = `<span class="code-block-language">${displayLang}</span>`;
