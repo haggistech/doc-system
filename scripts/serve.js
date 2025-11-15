@@ -12,10 +12,8 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from build directory
 app.use(express.static(path.join(rootDir, 'build')));
 
-// Handle SPA routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(rootDir, 'build', 'index.html'));
-});
+// Handle 404s - this isn't a SPA, so we don't need catch-all routing
+// Files are served directly from build directory
 
 app.listen(PORT, () => {
   console.log(`Documentation server running at http://localhost:${PORT}`);
