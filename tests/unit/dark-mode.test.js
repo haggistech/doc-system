@@ -122,7 +122,8 @@ describe('Dark Mode Features', () => {
 
       if (exists) {
         const html = await fs.readFile(htmlPath, 'utf-8');
-        expect(html).toContain('<script src="/dark-mode.js"></script>');
+        // Check for dark-mode.js script (may have baseUrl prefix)
+        expect(html).toMatch(/<script src="[^"]*dark-mode\.js"><\/script>/);
         expect(html).toContain('</head>');
 
         // Script should be in head for FOUC prevention
