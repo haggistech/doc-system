@@ -27,9 +27,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Install dependencies
         run: npm install
@@ -69,7 +69,7 @@ If your repository is at `github.com/username/repo`, update `config.json`:
 Create `.gitlab-ci.yml`:
 
 ```yaml
-image: node:18
+image: node:22
 
 pages:
   script:

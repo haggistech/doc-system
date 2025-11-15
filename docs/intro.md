@@ -9,8 +9,6 @@ Welcome to our documentation system! This is a lightweight, Docusaurus-like stat
 
 ## Features
 
-![Test Image](images/test.txt)
-
 - **Markdown-based**: Write your documentation in simple Markdown files
 - **Static Site Generation**: Build fast, static HTML pages
 - **Responsive Design**: Works beautifully on all devices

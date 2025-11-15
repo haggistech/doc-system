@@ -9,8 +9,14 @@ This guide will help you set up your documentation system.
 
 ## Prerequisites
 
-- Node.js 16 or higher
-- npm or yarn
+- **Node.js**: >= 22.0.0 (LTS recommended)
+- **npm**: >= 10.0.0
+
+If using NVM, you can install and use the correct version:
+```bash
+nvm install 22
+nvm use
+```
 
 ## Installation Steps
 

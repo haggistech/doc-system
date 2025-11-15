@@ -242,11 +242,6 @@ const highlightCssSource = path.join(
 
 Browse all themes: [Highlight.js Demo](https://highlightjs.org/static/demo/)
 
-## Requirements
-
-- Node.js 16 or higher
-- npm or yarn
-
 ## License
 
 MIT
