@@ -13,9 +13,11 @@ describe('Tabs Component', () => {
   beforeEach(() => {
     // Configure marked with enhanced code renderer
     marked.use({
+      useNewRenderer: true,
       renderer: {
-        code(code, infostring) {
-          const lang = infostring || 'plaintext';
+        code(token) {
+          const code = token.text;
+          const lang = token.lang || 'plaintext';
 
           let title = null;
           let highlightLines = [];
@@ -77,6 +79,7 @@ describe('Tabs Component', () => {
 
     // Configure marked with tabs extension
     marked.use({
+      useNewRenderer: true,
       extensions: [{
         name: 'tabs',
         level: 'block',
@@ -127,7 +130,7 @@ describe('Tabs Component', () => {
           }
 
           // Generate unique ID for this tab group
-          const tabId = `tabs-${Math.random().toString(36).substr(2, 9)}`;
+          const tabId = `tabs-${Math.random().toString(36).substring(2, 11)}`;
 
           // Generate tab buttons
           const tabButtons = token.tabs.map((tab, index) => {
