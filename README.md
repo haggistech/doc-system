@@ -4,7 +4,7 @@
 [![Deploy](https://github.com/haggistech/doc-system/actions/workflows/deploy.yml/badge.svg)](https://github.com/haggistech/doc-system/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen.svg)](https://github.com/haggistech/doc-system)
+[![Tests](https://img.shields.io/badge/tests-109%20passing-brightgreen.svg)](https://github.com/haggistech/doc-system)
 [![Built with](https://img.shields.io/badge/built%20with-Node.js-339933?logo=node.js)](https://nodejs.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/haggistech/doc-system/pulls)
 
@@ -21,6 +21,7 @@ A lightweight, Docusaurus-like static site generator for creating beautiful docu
 ### 📝 Content & Authoring
 - **Markdown-based**: Write documentation in simple Markdown with frontmatter support
 - **Enhanced Code Blocks**: Syntax highlighting with 190+ languages, code block titles, line highlighting, and toggleable line numbers
+- **Tabs Component**: Show code examples in multiple languages/frameworks with interactive tabs
 - **Copy Code Button**: One-click copy with visual feedback on all code blocks
 - **Image Support**: Automatic image copying with validation and broken image detection
 - **Admonitions**: Note, warning, tip, danger, and info callouts
@@ -35,7 +36,7 @@ A lightweight, Docusaurus-like static site generator for creating beautiful docu
 - **Internal Link Validation**: Automatic detection of broken links during build
 - **Git Metadata**: Last updated timestamps auto-generated from Git history
 - **Hot Reload**: Development server with automatic rebuilding
-- **Comprehensive Test Suite**: 90 unit and integration tests with 100% pass rate
+- **Comprehensive Test Suite**: 109 unit and integration tests with 100% pass rate
 - **Static Site Generation**: Fast, optimized static HTML pages
 
 ### 🚀 Deployment

@@ -1228,3 +1228,132 @@ article th {
     font-size: 1.5rem;
   }
 }
+
+/* ================================
+   Tabs Component
+   ================================ */
+
+.tabs-container {
+  margin: 1.5rem 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--code-bg);
+}
+
+.tabs-header {
+  display: flex;
+  gap: 0;
+  background: var(--code-header-bg);
+  border-bottom: 2px solid var(--border-color);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.tabs-content {
+  padding: 0;
+}
+
+.tab-panel {
+  display: none;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Remove extra margin from content inside tabs */
+.tab-panel > *:first-child {
+  margin-top: 0;
+}
+
+.tab-panel > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Code blocks inside tabs should have no extra margin */
+.tab-panel .code-block-container {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+}
+
+/* Dark mode adjustments for tabs */
+[data-theme="dark"] .tabs-container {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .tabs-header {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+[data-theme="dark"] .tab-button {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .tab-button:hover {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+}
+
+[data-theme="dark"] .tab-button.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+}
+
+/* Mobile responsive tabs */
+@media (max-width: 768px) {
+  .tab-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .tab-panel {
+    padding: 1rem;
+  }
+
+  .tabs-header {
+    -webkit-overflow-scrolling: touch;
+  }
+}

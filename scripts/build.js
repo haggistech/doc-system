@@ -141,6 +141,85 @@ marked.use({
   }]
 });
 
+// Configure marked with tabs extension
+marked.use({
+  extensions: [{
+    name: 'tabs',
+    level: 'block',
+    start(src) {
+      const match = src.match(/^:::tabs/);
+      return match?.index;
+    },
+    tokenizer(src) {
+      const rule = /^:::tabs\n([\s\S]*?)\n:::/;
+      const match = rule.exec(src);
+      if (match) {
+        const content = match[1];
+        const tabs = [];
+
+        // Parse tabs: == TabName followed by content until next == or end
+        const tabPattern = /^== (.+)$/gm;
+        let lastIndex = 0;
+        let lastTabName = null;
+        let tabMatch;
+
+        while ((tabMatch = tabPattern.exec(content)) !== null) {
+          // Save previous tab's content if it exists
+          if (lastTabName) {
+            const tabContent = content.substring(lastIndex, tabMatch.index).trim();
+            tabs.push({ name: lastTabName, content: tabContent });
+          }
+
+          lastTabName = tabMatch[1].trim();
+          lastIndex = tabMatch.index + tabMatch[0].length;
+        }
+
+        // Add the last tab
+        if (lastTabName) {
+          const tabContent = content.substring(lastIndex).trim();
+          tabs.push({ name: lastTabName, content: tabContent });
+        }
+
+        return {
+          type: 'tabs',
+          raw: match[0],
+          tabs: tabs
+        };
+      }
+    },
+    renderer(token) {
+      if (!token.tabs || token.tabs.length === 0) {
+        return '';
+      }
+
+      // Generate unique ID for this tab group
+      const tabId = `tabs-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Generate tab buttons
+      const tabButtons = token.tabs.map((tab, index) => {
+        const activeClass = index === 0 ? ' active' : '';
+        return `<button class="tab-button${activeClass}" data-tab="${tabId}-${index}">${tab.name}</button>`;
+      }).join('\n');
+
+      // Generate tab content panels
+      const tabPanels = token.tabs.map((tab, index) => {
+        const activeClass = index === 0 ? ' active' : '';
+        const content = marked.parse(tab.content);
+        return `<div class="tab-panel${activeClass}" data-tab="${tabId}-${index}">${content}</div>`;
+      }).join('\n');
+
+      return `<div class="tabs-container" data-tabs-id="${tabId}">
+        <div class="tabs-header">
+          ${tabButtons}
+        </div>
+        <div class="tabs-content">
+          ${tabPanels}
+        </div>
+      </div>`;
+    }
+  }]
+});
+
 // Load configuration
 const config = JSON.parse(await fs.readFile(path.join(rootDir, 'config.json'), 'utf-8'));
 
@@ -551,6 +630,7 @@ function generatePage(doc, allDocs, sidebar) {
   <script src="${config.baseUrl}copy-code.js"></script>
   <script src="${config.baseUrl}toc.js"></script>
   <script src="${config.baseUrl}line-numbers.js"></script>
+  <script src="${config.baseUrl}tabs.js"></script>
   <script>
     // Mobile sidebar toggle
     document.addEventListener('DOMContentLoaded', function() {
@@ -888,6 +968,11 @@ async function build() {
   const lineNumbersSource = path.join(rootDir, 'theme', 'line-numbers.js');
   const lineNumbersTarget = path.join(outputDir, 'line-numbers.js');
   await fs.copyFile(lineNumbersSource, lineNumbersTarget);
+
+  // Copy tabs script
+  const tabsSource = path.join(rootDir, 'theme', 'tabs.js');
+  const tabsTarget = path.join(outputDir, 'tabs.js');
+  await fs.copyFile(tabsSource, tabsTarget);
 
   // Process and copy images
   console.log('\nProcessing images...');
