@@ -43,9 +43,11 @@ This is a test.`;
       const hljs = await import('highlight.js');
 
       marked.use({
+        useNewRenderer: true,
         renderer: {
-          code(code, infostring) {
-            const lang = infostring || 'plaintext';
+          code(token) {
+            const code = token.text;
+            const lang = token.lang || 'plaintext';
             const language = hljs.default.getLanguage(lang) ? lang : 'plaintext';
             const highlighted = hljs.default.highlight(code, { language }).value;
             const displayLang = lang.charAt(0).toUpperCase() + lang.slice(1);
@@ -73,9 +75,11 @@ This is a test.`;
       const hljs = await import('highlight.js');
 
       marked.use({
+        useNewRenderer: true,
         renderer: {
-          code(code, infostring) {
-            const lang = infostring || 'plaintext';
+          code(token) {
+            const code = token.text;
+            const lang = token.lang || 'plaintext';
             const language = hljs.default.getLanguage(lang) ? lang : 'plaintext';
             const highlighted = hljs.default.highlight(code, { language }).value;
             const displayLang = lang.charAt(0).toUpperCase() + lang.slice(1);
