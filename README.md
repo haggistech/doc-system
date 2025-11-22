@@ -4,7 +4,7 @@
 [![Deploy](https://github.com/haggistech/doc-system/actions/workflows/deploy.yml/badge.svg)](https://github.com/haggistech/doc-system/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/tests-109%20passing-brightgreen.svg)](https://github.com/haggistech/doc-system)
+[![Tests](https://img.shields.io/badge/tests-141%20passing-brightgreen.svg)](https://github.com/haggistech/doc-system)
 [![Built with](https://img.shields.io/badge/built%20with-Node.js-339933?logo=node.js)](https://nodejs.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/haggistech/doc-system/pulls)
 
@@ -27,16 +27,19 @@ A lightweight, Docusaurus-like static site generator for creating beautiful docu
 - **Admonitions**: Note, warning, tip, danger, and info callouts
 
 ### 🔍 Search & Navigation
-- **Enhanced Search**: Full-text search with content previews and recent searches
+- **Fuzzy Search**: Powered by Fuse.js with typo tolerance and configurable sensitivity
+- **Full-text Search**: Search across titles, descriptions, and content with smart ranking
 - **Keyboard Shortcuts**: `Ctrl/Cmd + K` to search, arrow keys to navigate
+- **Recent Searches**: Remembers your recent searches with localStorage
 - **Breadcrumb Navigation**: Automatic breadcrumbs showing current location
 - **Auto-Generated Sidebar**: Sidebar built from folder structure automatically
 
 ### 🛠️ Developer Experience
+- **Modular Architecture**: Clean separation of concerns with focused modules
 - **Internal Link Validation**: Automatic detection of broken links during build
 - **Git Metadata**: Last updated timestamps auto-generated from Git history
 - **Hot Reload**: Development server with automatic rebuilding
-- **Comprehensive Test Suite**: 109 unit and integration tests with 100% pass rate
+- **Comprehensive Test Suite**: 141 unit and integration tests with 100% pass rate
 - **Static Site Generation**: Fast, optimized static HTML pages
 
 ### 🚀 Deployment
@@ -78,20 +81,35 @@ npm run serve
 
 ```
 doc-system/
-├── docs/              # Your markdown documentation files
+├── docs/                  # Your markdown documentation files
 │   ├── intro.md
 │   ├── installation.md
 │   └── guides/
 │       ├── configuration.md
 │       └── deployment.md
-├── theme/             # Site styling and scripts
+├── theme/                 # Site styling and scripts
 │   ├── styles.css
-│   └── search.js
-├── scripts/           # Build and development scripts
-│   ├── build.js       # Static site generator
-│   ├── dev.js         # Development server with hot reload
-│   └── serve.js       # Production server
-├── config.json        # Site configuration
+│   ├── search.js          # Fuzzy search with Fuse.js
+│   ├── dark-mode.js
+│   ├── toc.js
+│   ├── copy-code.js
+│   ├── line-numbers.js
+│   └── tabs.js
+├── scripts/               # Build and development scripts
+│   ├── build.js           # Main build orchestrator
+│   ├── dev.js             # Development server with hot reload
+│   ├── serve.js           # Production server
+│   └── lib/               # Modular build components
+│       ├── git-metadata.js        # Git date/author extraction
+│       ├── link-validator.js      # Internal link checking
+│       ├── image-processor.js     # Image extraction/copying
+│       ├── markdown-processor.js  # Marked config, extensions
+│       ├── navigation-builder.js  # Sidebar, breadcrumbs, pagination
+│       └── page-generator.js      # HTML template generation
+├── tests/                 # Test suite
+│   ├── unit/              # Unit tests
+│   └── integration/       # Integration tests
+├── config.json            # Site configuration
 └── package.json
 ```
 
@@ -104,12 +122,33 @@ Edit `config.json` to customize your site:
   "title": "Documentation Site",
   "description": "A modern documentation system",
   "baseUrl": "/",
+  "docsDir": "docs",
+  "outputDir": "build",
+  "search": {
+    "maxResults": 10,
+    "fuzzyThreshold": 0.3,
+    "minMatchLength": 2
+  },
   "navbar": {
     "title": "Docs",
-    "links": [...]
+    "links": [
+      { "label": "Documentation", "to": "/docs/intro" },
+      { "label": "GitHub", "href": "https://github.com/your-repo" }
+    ]
+  },
+  "footer": {
+    "copyright": "Built with Doc System"
   }
 }
 ```
+
+### Search Configuration
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `maxResults` | 10 | Maximum number of search results to display |
+| `fuzzyThreshold` | 0.3 | Match sensitivity (0 = exact only, 1 = match anything) |
+| `minMatchLength` | 2 | Minimum characters before search activates |
 
 **Note:** The sidebar is automatically generated from your folder structure in the `docs/` directory:
 - Root-level markdown files appear under "Getting Started"
@@ -133,7 +172,7 @@ description: Page description
 Your content here...
 ```
 
-3. Update the sidebar in `config.json`
+3. The sidebar updates automatically based on folder structure
 
 ## Deployment
 
@@ -162,7 +201,7 @@ The included workflows (`.github/workflows/`):
 Create `.gitlab-ci.yml`:
 
 ```yaml
-image: node:18
+image: node:22
 
 pages:
   script:
@@ -211,17 +250,28 @@ Edit `theme/styles.css` to customize the appearance. CSS variables are defined a
 
 ### Search
 
-The enhanced search is powered by client-side JavaScript with smart scoring and keyboard navigation:
+The search is powered by [Fuse.js](https://fusejs.io/) for fuzzy matching with typo tolerance.
 
 **Features:**
+- Fuzzy matching (typo tolerance)
 - Instant search as you type
 - Keyboard shortcuts: `Ctrl/Cmd + K` to focus, `↑↓` to navigate, `Enter` to open
-- Results ranked by relevance (title > description > path)
+- Results ranked by relevance (title > description > content > slug)
 - Highlighted search terms in results
-- Maximum 8 top results
+- Configurable result limit and sensitivity
 
 **Customization:**
-Edit `theme/search.js` to modify search behavior, scoring, or result limit.
+Edit search settings in `config.json`:
+
+```json
+{
+  "search": {
+    "maxResults": 15,
+    "fuzzyThreshold": 0.4,
+    "minMatchLength": 3
+  }
+}
+```
 
 ### Syntax Highlighting
 
@@ -242,6 +292,20 @@ const highlightCssSource = path.join(
 ```
 
 Browse all themes: [Highlight.js Demo](https://highlightjs.org/static/demo/)
+
+## Architecture
+
+The build system is organized into focused modules for maintainability:
+
+| Module | Purpose |
+|--------|---------|
+| `build.js` | Main orchestrator, file discovery, asset copying |
+| `markdown-processor.js` | Marked configuration, admonitions, tabs, code blocks |
+| `git-metadata.js` | Extract creation/update dates from git history |
+| `link-validator.js` | Find and validate internal markdown links |
+| `image-processor.js` | Extract image references, validate, copy to output |
+| `navigation-builder.js` | Generate sidebar, breadcrumbs, pagination |
+| `page-generator.js` | Generate complete HTML pages from templates |
 
 ## License
 

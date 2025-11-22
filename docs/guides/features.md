@@ -88,34 +88,58 @@ The copy button automatically handles:
 - Cross-browser compatibility
 - Touch device optimization
 
-## Enhanced Search
+## Fuzzy Search
 
-A powerful client-side search with an intuitive UI built into the navbar.
+A powerful client-side search powered by [Fuse.js](https://fusejs.io/) with fuzzy matching and typo tolerance.
 
 ### Search Features
 
-- **Instant Results**: Search as you type
-- **Smart Scoring**: Results ranked by relevance
-  - Title matches get highest priority
-  - Description matches get medium priority
-  - Path matches get lower priority
+- **Fuzzy Matching**: Typo-tolerant search that finds results even with spelling mistakes
+- **Instant Results**: Search as you type with configurable minimum query length
+- **Smart Scoring**: Results ranked by relevance using weighted fields
+  - Title matches (40% weight) - highest priority
+  - Description matches (30% weight)
+  - Content matches (20% weight) - full-text search
+  - Slug/path matches (10% weight)
 - **Keyboard Navigation**:
   - `↑` / `↓` - Navigate through results
   - `Enter` - Open selected result
   - `Escape` - Close search
   - `Ctrl/Cmd + K` - Focus search bar
 - **Highlighted Matches**: Search terms are highlighted in results
-- **Result Preview**: See title, description, and file path
-- **Maximum 8 Results**: Top results to avoid overwhelming
+- **Content Previews**: See snippets from matching content
+- **Recent Searches**: Remembers your recent searches (stored in localStorage)
+- **Configurable Results**: Adjustable maximum results (default: 10)
 
 ### How Search Works
 
-The search performs a client-side fuzzy search across:
-1. **Document Titles** (highest weight)
-2. **Document Descriptions** (medium weight)
-3. **Document Paths** (lowest weight)
+The search uses Fuse.js to perform fuzzy matching across:
+1. **Document Titles** (40% weight)
+2. **Document Descriptions** (30% weight)
+3. **Document Content** (20% weight) - full text of the page
+4. **Document Slugs** (10% weight)
 
-Results are scored and sorted by relevance, with exact matches and title-start matches receiving bonus points.
+Fuzzy matching allows finding results even with typos. For example, searching "configuraton" will still find "configuration".
+
+### Search Configuration
+
+Configure search behavior in `config.json`:
+
+```json
+{
+  "search": {
+    "maxResults": 10,
+    "fuzzyThreshold": 0.3,
+    "minMatchLength": 2
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `maxResults` | 10 | Maximum results to display |
+| `fuzzyThreshold` | 0.3 | Match sensitivity (0 = exact, 1 = match anything) |
+| `minMatchLength` | 2 | Minimum characters before searching |
 
 ### Search Shortcuts
 
