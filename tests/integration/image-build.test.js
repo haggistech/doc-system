@@ -40,16 +40,18 @@ describe('Image Build Integration', () => {
   });
 
   it('should have image copying logic in build script', async () => {
-    const buildScript = path.join(projectRoot, 'scripts', 'build.js');
-    const content = await fs.readFile(buildScript, 'utf-8');
+    // Check the image processor module for core functions
+    const imageProcessor = path.join(projectRoot, 'scripts', 'lib', 'image-processor.js');
+    const content = await fs.readFile(imageProcessor, 'utf-8');
 
     expect(content).toContain('extractImageReferences');
     expect(content).toContain('processImages');
   });
 
   it('should have image validation in build script', async () => {
-    const buildScript = path.join(projectRoot, 'scripts', 'build.js');
-    const content = await fs.readFile(buildScript, 'utf-8');
+    // Check the image processor module for validation logic
+    const imageProcessor = path.join(projectRoot, 'scripts', 'lib', 'image-processor.js');
+    const content = await fs.readFile(imageProcessor, 'utf-8');
 
     expect(content).toContain('brokenImages');
     expect(content).toContain('copiedImages');

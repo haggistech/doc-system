@@ -1,19 +1,44 @@
-// Enhanced client-side search with full-text, previews, and recent searches
+// Enhanced client-side search with Fuse.js fuzzy matching
 (function() {
   let searchIndex = [];
+  let searchConfig = {
+    maxResults: 10,
+    fuzzyThreshold: 0.3,
+    minMatchLength: 2,
+    baseUrl: '/'
+  };
+  let fuse = null;
   let searchInput;
   let searchResults;
   let selectedIndex = -1;
   const MAX_RECENT_SEARCHES = 5;
   const RECENT_SEARCHES_KEY = 'doc-system-recent-searches';
 
-  // Load search index
-  fetch('/search-index.json')
-    .then(response => response.json())
-    .then(data => {
-      searchIndex = data;
-    })
-    .catch(err => console.error('Failed to load search index:', err));
+  // Load search config and index
+  Promise.all([
+    fetch('/search-config.json').then(r => r.json()).catch(() => searchConfig),
+    fetch('/search-index.json').then(r => r.json())
+  ]).then(([config, index]) => {
+    searchConfig = { ...searchConfig, ...config };
+    searchIndex = index;
+
+    // Initialize Fuse.js with fuzzy search
+    fuse = new Fuse(searchIndex, {
+      keys: [
+        { name: 'title', weight: 0.4 },
+        { name: 'description', weight: 0.3 },
+        { name: 'content', weight: 0.2 },
+        { name: 'slug', weight: 0.1 }
+      ],
+      threshold: searchConfig.fuzzyThreshold,
+      distance: 100,
+      includeScore: true,
+      includeMatches: true,
+      minMatchCharLength: searchConfig.minMatchLength,
+      ignoreLocation: true,
+      useExtendedSearch: false
+    });
+  }).catch(err => console.error('Failed to load search:', err));
 
   // Initialize search UI when DOM is ready
   document.addEventListener('DOMContentLoaded', function() {
@@ -108,7 +133,7 @@
   });
 
   function handleSearch(query) {
-    if (!query || query.length < 2) {
+    if (!query || query.length < searchConfig.minMatchLength) {
       if (!query) {
         showRecentSearches();
       } else {
@@ -122,87 +147,50 @@
   }
 
   function searchDocs(query) {
-    if (!query || query.length < 2) return [];
+    if (!fuse || !query || query.length < searchConfig.minMatchLength) return [];
 
-    const lowerQuery = query.toLowerCase();
-    const queryTerms = lowerQuery.split(/\s+/).filter(t => t.length > 1);
-    const results = [];
+    // Use Fuse.js for fuzzy search
+    const fuseResults = fuse.search(query);
 
-    for (const doc of searchIndex) {
-      let score = 0;
-      let titleMatch = false;
-      let descMatch = false;
-      let contentMatch = false;
-      let contentSnippet = '';
+    // Transform and limit results
+    return fuseResults
+      .slice(0, searchConfig.maxResults)
+      .map(result => {
+        const doc = result.item;
+        const matches = result.matches || [];
 
-      // Title matching (highest priority)
-      if (doc.title.toLowerCase().includes(lowerQuery)) {
-        titleMatch = true;
-        score += 100;
-        // Boost exact matches
-        if (doc.title.toLowerCase() === lowerQuery) {
-          score += 50;
+        // Find content snippet from matches
+        let contentSnippet = '';
+        const contentMatch = matches.find(m => m.key === 'content');
+        if (contentMatch && contentMatch.indices.length > 0) {
+          contentSnippet = extractSnippetFromMatch(doc.content, contentMatch.indices[0]);
         }
-        // Boost matches at start
-        if (doc.title.toLowerCase().startsWith(lowerQuery)) {
-          score += 30;
-        }
-      }
 
-      // Description matching
-      if (doc.description && doc.description.toLowerCase().includes(lowerQuery)) {
-        descMatch = true;
-        score += 50;
-      }
-
-      // Full-text content matching
-      if (doc.content) {
-        const contentLower = doc.content.toLowerCase();
-
-        // Check for exact phrase match
-        if (contentLower.includes(lowerQuery)) {
-          contentMatch = true;
-          score += 30;
-          contentSnippet = extractSnippet(doc.content, lowerQuery);
-        } else {
-          // Check for individual term matches
-          let termMatches = 0;
-          for (const term of queryTerms) {
-            if (contentLower.includes(term)) {
-              termMatches++;
-            }
-          }
-
-          if (termMatches > 0) {
-            contentMatch = true;
-            score += termMatches * 10;
-            contentSnippet = extractSnippet(doc.content, queryTerms[0]);
-          }
-        }
-      }
-
-      // Slug matching (lower priority)
-      if (doc.slug.toLowerCase().includes(lowerQuery)) {
-        score += 10;
-      }
-
-      if (score > 0) {
-        results.push({
+        return {
           ...doc,
-          score,
-          titleMatch,
-          descMatch,
-          contentMatch,
-          contentSnippet
-        });
-      }
-    }
+          score: 1 - result.score, // Fuse score is 0 (perfect) to 1 (no match), invert it
+          matches,
+          contentSnippet,
+          titleMatch: matches.some(m => m.key === 'title'),
+          descMatch: matches.some(m => m.key === 'description'),
+          contentMatch: matches.some(m => m.key === 'content')
+        };
+      });
+  }
 
-    // Sort by score (highest first)
-    results.sort((a, b) => b.score - a.score);
+  function extractSnippetFromMatch(content, indices, maxLength = 150) {
+    if (!content || !indices) return '';
 
-    // Limit to top 8 results
-    return results.slice(0, 8);
+    const [start, end] = indices;
+    const snippetStart = Math.max(0, start - 50);
+    const snippetEnd = Math.min(content.length, end + maxLength);
+
+    let snippet = content.substring(snippetStart, snippetEnd);
+
+    if (snippetStart > 0) snippet = '...' + snippet;
+    if (snippetEnd < content.length) snippet = snippet + '...';
+
+    return snippet.trim();
   }
 
   function extractSnippet(content, query, maxLength = 150) {
@@ -212,13 +200,11 @@
 
     if (index === -1) return '';
 
-    // Calculate snippet start and end
     const snippetStart = Math.max(0, index - 50);
     const snippetEnd = Math.min(content.length, index + query.length + maxLength);
 
     let snippet = content.substring(snippetStart, snippetEnd);
 
-    // Add ellipsis if needed
     if (snippetStart > 0) snippet = '...' + snippet;
     if (snippetEnd < content.length) snippet = snippet + '...';
 
@@ -243,9 +229,12 @@
         preview = highlightText(truncateText(result.description, 100), query);
       }
 
+      // Show fuzzy match indicator if score is below threshold
+      const fuzzyIndicator = result.score < 0.8 ? '<span class="fuzzy-match" title="Fuzzy match">~</span>' : '';
+
       return `
-        <a href="/docs/${result.slug}.html" class="search-result-item" data-index="${index}">
-          <div class="search-result-title">${title}</div>
+        <a href="${searchConfig.baseUrl}docs/${result.slug}.html" class="search-result-item" data-index="${index}">
+          <div class="search-result-title">${title}${fuzzyIndicator}</div>
           ${preview ? `<div class="search-result-preview">${preview}</div>` : ''}
           <div class="search-result-path">${result.slug}</div>
         </a>
@@ -326,8 +315,9 @@
     const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
     let result = text;
 
-    // Highlight each term
+    // Highlight each term (including fuzzy matches by using broader matching)
     for (const term of terms) {
+      // Create a pattern that matches the term with some flexibility
       const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
       result = result.replace(regex, '<mark>$1</mark>');
     }

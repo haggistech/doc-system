@@ -4,6 +4,11 @@
   "baseUrl": "/doc-system/",
   "docsDir": "docs",
   "outputDir": "build",
+  "search": {
+    "maxResults": 10,
+    "fuzzyThreshold": 0.3,
+    "minMatchLength": 2
+  },
   "navbar": {
     "title": "Docs",
     "links": [
