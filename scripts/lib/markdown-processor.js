@@ -13,6 +13,12 @@ marked.use({
       const code = token.text;
       const lang = token.lang || 'plaintext';
 
+      // Mermaid diagrams — pass raw source to the client-side renderer
+      if (lang.trim() === 'mermaid') {
+        const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<div class="mermaid-container"><pre class="mermaid">${escaped}</pre></div>`;
+      }
+
       // Parse enhanced syntax: language title="filename" {1,3-5}
       // Examples:
       //   javascript title="config.js"
@@ -219,6 +225,37 @@ marked.use({
   }]
 });
 
+// Configure marked with collapsible details extension
+marked.use({
+  useNewRenderer: true,
+  extensions: [{
+    name: 'details',
+    level: 'block',
+    start(src) {
+      return src.match(/^:::details/)?.index;
+    },
+    tokenizer(src) {
+      const rule = /^:::details(?: +(.+?))?\n([\s\S]*?)\n:::/;
+      const match = rule.exec(src);
+      if (match) {
+        return {
+          type: 'details',
+          raw: match[0],
+          summary: match[1]?.trim() || 'Details',
+          text: match[2].trim()
+        };
+      }
+    },
+    renderer(token) {
+      const content = marked.parse(token.text);
+      return `<details class="details-block">
+        <summary class="details-summary">${token.summary}</summary>
+        <div class="details-content">${content}</div>
+      </details>`;
+    }
+  }]
+});
+
 /**
  * Generate Table of Contents from HTML headings
  * @param {string} html - HTML content
@@ -257,7 +294,7 @@ export function generateTableOfContents(html) {
   let currentId = 0;
   processedHtml = processedHtml.replace(/<h([2-3])([^>]*)>(.+?)<\/h\1>/g, (match, level, attrs, text) => {
     const id = `heading-${currentId++}`;
-    return `<h${level}${attrs} id="${id}">${text}</h${level}>`;
+    return `<h${level}${attrs} id="${id}">${text}<a class="heading-anchor" href="#${id}" aria-label="Link to this section">#</a></h${level}>`;
   });
 
   // Generate TOC HTML
@@ -291,6 +328,11 @@ export async function processMarkdown(filePath, baseDir, rootDir) {
   const relativePath = path.relative(baseDir, filePath);
   const slug = relativePath.replace(/\.md$/, '').replace(/\\/g, '/');
 
+  // Calculate reading time (strip code blocks before counting)
+  const textForCount = body.replace(/```[\s\S]*?```/g, '').replace(/`[^`]+`/g, '');
+  const wordCount = textForCount.split(/\s+/).filter(w => w.length > 0).length;
+  const readingTime = Math.max(1, Math.round(wordCount / 200));
+
   // Get Git metadata
   const gitMetadata = getGitMetadata(filePath, rootDir);
 
@@ -300,7 +342,8 @@ export async function processMarkdown(filePath, baseDir, rootDir) {
     description: attributes.description || '',
     html,
     attributes,
-    filePath, // Add filePath for link validation
+    filePath,
+    readingTime,
     metadata: {
       author: attributes.author || null,
       created: gitMetadata?.created || null,

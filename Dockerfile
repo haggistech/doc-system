@@ -15,6 +15,9 @@ RUN npm ci --only=production
 # Copy source files
 COPY . .
 
+# Override baseUrl for Docker (served from root, not /doc-system/)
+RUN node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('config.json','utf8'));c.baseUrl='/';fs.writeFileSync('config.json',JSON.stringify(c,null,2));"
+
 # Build the documentation
 RUN npm run build
 

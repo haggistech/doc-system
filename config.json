@@ -2,6 +2,8 @@
   "title": "Documentation Site",
   "description": "A modern documentation system",
   "baseUrl": "/doc-system/",
+  "siteUrl": "https://haggistech.github.io",
+  "repoUrl": "https://github.com/haggistech/doc-system",
   "docsDir": "docs",
   "outputDir": "build",
   "search": {

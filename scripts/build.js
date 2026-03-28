@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
 import fm from 'front-matter';
 import { fileURLToPath } from 'url';
 
@@ -8,7 +9,7 @@ import { processMarkdown } from './lib/markdown-processor.js';
 import { validateInternalLinks } from './lib/link-validator.js';
 import { processImages } from './lib/image-processor.js';
 import { generateSidebarFromFiles } from './lib/navigation-builder.js';
-import { generatePage } from './lib/page-generator.js';
+import { generatePage, generate404Page } from './lib/page-generator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,36 +49,42 @@ async function getMarkdownFiles(dir) {
 }
 
 /**
- * Copy theme assets to output directory
+ * Copy theme assets to output directory with content-hash fingerprinting.
+ * Returns a manifest mapping original filename → hashed filename.
  * @param {string} rootDir - Root project directory
  * @param {string} outputDir - Output directory
  * @param {Object} config - Site configuration
+ * @returns {Promise<Object>} Asset manifest
  */
 async function copyAssets(rootDir, outputDir, config) {
-  // Copy CSS
-  const cssSource = path.join(rootDir, 'theme', 'styles.css');
-  const cssTarget = path.join(outputDir, 'styles.css');
-  await fs.copyFile(cssSource, cssTarget);
+  const manifest = {};
 
-  // Copy highlight.js CSS
-  const highlightCssSource = path.join(rootDir, 'node_modules', 'highlight.js', 'styles', 'github-dark.css');
-  const highlightCssTarget = path.join(outputDir, 'highlight.css');
-  await fs.copyFile(highlightCssSource, highlightCssTarget);
-
-  // Copy Fuse.js for fuzzy search
-  const fuseSource = path.join(rootDir, 'node_modules', 'fuse.js', 'dist', 'fuse.basic.min.js');
-  const fuseTarget = path.join(outputDir, 'fuse.min.js');
-  await fs.copyFile(fuseSource, fuseTarget);
-
-  // Copy JavaScript files
-  const jsFiles = ['search.js', 'copy-code.js', 'toc.js', 'dark-mode.js', 'line-numbers.js', 'tabs.js'];
-  for (const jsFile of jsFiles) {
-    const source = path.join(rootDir, 'theme', jsFile);
-    const target = path.join(outputDir, jsFile);
-    await fs.copyFile(source, target);
+  async function copyHashed(src, name) {
+    const content = await fs.readFile(src);
+    const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
+    const ext = path.extname(name);
+    const base = path.basename(name, ext);
+    const hashedName = `${base}.${hash}${ext}`;
+    await fs.copyFile(src, path.join(outputDir, hashedName));
+    manifest[name] = hashedName;
   }
 
-  // Generate search config file
+  await copyHashed(path.join(rootDir, 'theme', 'styles.css'), 'styles.css');
+  await copyHashed(
+    path.join(rootDir, 'node_modules', 'highlight.js', 'styles', 'github-dark.css'),
+    'highlight.css'
+  );
+  await copyHashed(
+    path.join(rootDir, 'node_modules', 'fuse.js', 'dist', 'fuse.basic.min.js'),
+    'fuse.min.js'
+  );
+
+  const jsFiles = ['search.js', 'copy-code.js', 'toc.js', 'dark-mode.js', 'line-numbers.js', 'tabs.js'];
+  for (const jsFile of jsFiles) {
+    await copyHashed(path.join(rootDir, 'theme', jsFile), jsFile);
+  }
+
+  // Search config and index are fetched by name from search.js — not fingerprinted
   const searchConfig = {
     maxResults: config.search?.maxResults || 10,
     fuzzyThreshold: config.search?.fuzzyThreshold || 0.3,
@@ -88,6 +95,8 @@ async function copyAssets(rootDir, outputDir, config) {
     path.join(outputDir, 'search-config.json'),
     JSON.stringify(searchConfig, null, 2)
   );
+
+  return manifest;
 }
 
 /**
@@ -164,13 +173,16 @@ async function build() {
   const sidebar = generateSidebarFromFiles(docs, docsDir);
   console.log('✓ Generated sidebar from folder structure');
 
+  // Copy theme assets first to get fingerprinted manifest
+  const assetManifest = await copyAssets(rootDir, outputDir, config);
+
   // Create docs output directory
   const docsOutputDir = path.join(outputDir, 'docs');
   await fs.mkdir(docsOutputDir, { recursive: true });
 
   // Generate HTML for each doc
   for (const doc of docs) {
-    const html = generatePage(doc, docs, sidebar, config);
+    const html = generatePage(doc, docs, sidebar, config, assetManifest);
     const outputFilePath = path.join(docsOutputDir, `${doc.slug}.html`);
 
     // Create subdirectories if needed
@@ -179,9 +191,6 @@ async function build() {
   }
 
   console.log(`✓ Built ${docs.length} pages`);
-
-  // Copy theme assets
-  await copyAssets(rootDir, outputDir, config);
 
   // Process and copy images
   console.log('\nProcessing images...');
@@ -204,6 +213,20 @@ async function build() {
     path.join(outputDir, 'search-index.json'),
     JSON.stringify(searchIndex, null, 2)
   );
+
+  // Generate custom 404 page
+  await fs.writeFile(path.join(outputDir, '404.html'), generate404Page(config, assetManifest));
+  console.log('✓ Generated 404.html');
+
+  // Generate sitemap.xml
+  const siteUrl = (config.siteUrl || '').replace(/\/$/, '');
+  const base = (config.baseUrl || '/').replace(/\/$/, '');
+  const sitemapUrls = docs.map(doc =>
+    `  <url>\n    <loc>${siteUrl}${base}/docs/${doc.slug}.html</loc>\n  </url>`
+  );
+  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>`;
+  await fs.writeFile(path.join(outputDir, 'sitemap.xml'), sitemapXml);
+  console.log('✓ Generated sitemap.xml');
 
   // Create index.html that redirects to first doc
   if (docs.length > 0 && sidebar.length > 0) {
