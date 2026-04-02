@@ -345,11 +345,11 @@ export async function processMarkdown(filePath, baseDir, rootDir) {
     filePath,
     readingTime,
     metadata: {
-      author: attributes.author || null,
-      created: gitMetadata?.created || null,
+      author: attributes.author || gitMetadata?.lastUpdatedBy || null,
+      created: attributes.created || gitMetadata?.created || null,
       createdBy: gitMetadata?.createdBy || null,
       createdTimestamp: gitMetadata?.createdTimestamp || null,
-      lastUpdated: gitMetadata?.lastUpdated || null,
+      lastUpdated: attributes.lastUpdated || gitMetadata?.lastUpdated || null,
       lastUpdatedBy: gitMetadata?.lastUpdatedBy || null,
       lastUpdatedTimestamp: gitMetadata?.lastUpdatedTimestamp || null
     }
