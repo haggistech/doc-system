@@ -137,7 +137,7 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
         ${processedHtml}
       </article>
 
-      ${config.repoUrl ? `<div class="edit-page">
+      ${config.repoUrl && doc.attributes.edit !== false ? `<div class="edit-page">
         <a href="${config.repoUrl}/edit/master/${config.docsDir || 'docs'}/${doc.slug}.md" target="_blank" rel="noopener noreferrer" class="edit-page-link">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -152,7 +152,7 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
       </div>
     </main>
 
-    ${tocHtml ? `<aside class="toc-sidebar">${tocHtml}</aside>` : ''}
+    ${tocHtml && doc.attributes.toc !== false ? `<aside class="toc-sidebar">${tocHtml}</aside>` : ''}
   </div>
 
   <footer class="footer">

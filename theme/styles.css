@@ -1579,3 +1579,96 @@ h3:hover .heading-anchor {
 [data-theme="dark"] .details-content {
   border-top-color: #374151;
 }
+
+/* ============================================================
+   Print stylesheet
+   ============================================================ */
+
+@media print {
+  /* Hide everything except the main content */
+  .navbar,
+  .sidebar,
+  .toc-sidebar,
+  .search-container,
+  .theme-toggle,
+  .mobile-sidebar-toggle,
+  .pagination,
+  .edit-page,
+  .copy-code-button,
+  .toggle-line-numbers,
+  .heading-anchor,
+  .footer {
+    display: none !important;
+  }
+
+  /* Reset layout to single column */
+  .container {
+    display: block;
+    padding: 0;
+  }
+
+  .content {
+    max-width: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Base typography */
+  body {
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #000;
+    background: #fff;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #000;
+    page-break-after: avoid;
+  }
+
+  /* Avoid breaking inside these blocks */
+  pre, blockquote, table, figure,
+  .admonition, .details-block, .tabs-container {
+    page-break-inside: avoid;
+  }
+
+  /* Show full URLs for external links */
+  a[href^="http"]::after,
+  a[href^="https"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #555;
+    word-break: break-all;
+  }
+
+  a[href^="#"]::after {
+    content: none;
+  }
+
+  /* Code blocks — light background, visible border */
+  pre, code {
+    background: #f5f5f5 !important;
+    color: #000 !important;
+    border: 1px solid #ddd;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .code-block-header {
+    background: #e8e8e8 !important;
+    color: #000 !important;
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* Admonitions */
+  .admonition {
+    border: 1px solid #ccc;
+    background: #f9f9f9 !important;
+  }
+
+  /* Mermaid diagrams — let them print as-is */
+  .mermaid-container {
+    page-break-inside: avoid;
+  }
+}
