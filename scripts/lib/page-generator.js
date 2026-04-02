@@ -80,6 +80,11 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${doc.title} | ${config.title}</title>
   <meta name="description" content="${doc.description || config.description}">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="${config.title}">
+  <meta property="og:title" content="${doc.title} | ${config.title}">
+  <meta property="og:description" content="${doc.description || config.description}">
+  <meta property="og:url" content="${(config.siteUrl || '').replace(/\/$/, '')}${config.baseUrl}docs/${doc.slug}.html">
   <link rel="stylesheet" href="${asset('styles.css')}">
   <link rel="stylesheet" href="${asset('highlight.css')}">
   <script src="${asset('dark-mode.js')}"></script>

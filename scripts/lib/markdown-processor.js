@@ -348,8 +348,10 @@ export async function processMarkdown(filePath, baseDir, rootDir) {
       author: attributes.author || null,
       created: gitMetadata?.created || null,
       createdBy: gitMetadata?.createdBy || null,
+      createdTimestamp: gitMetadata?.createdTimestamp || null,
       lastUpdated: gitMetadata?.lastUpdated || null,
-      lastUpdatedBy: gitMetadata?.lastUpdatedBy || null
+      lastUpdatedBy: gitMetadata?.lastUpdatedBy || null,
+      lastUpdatedTimestamp: gitMetadata?.lastUpdatedTimestamp || null
     }
   };
 }

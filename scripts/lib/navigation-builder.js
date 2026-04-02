@@ -64,10 +64,29 @@ export function generateSidebarFromFiles(docs, docsDir) {
 export function generateSidebar(items, currentSlug, allDocs, config) {
   let html = '<ul class="sidebar-nav">';
 
-  // Create a map of slugs to doc titles for quick lookup
+  // Create maps of slug → title and slug → metadata
   const docTitleMap = {};
+  const docMetaMap = {};
   for (const doc of allDocs) {
     docTitleMap[doc.slug] = doc.title;
+    docMetaMap[doc.slug] = doc.metadata;
+  }
+
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  function getBadge(slug) {
+    const meta = docMetaMap[slug];
+    if (!meta) return '';
+    const createdMs = meta.createdTimestamp ? meta.createdTimestamp * 1000 : null;
+    const updatedMs = meta.lastUpdatedTimestamp ? meta.lastUpdatedTimestamp * 1000 : null;
+    if (createdMs && (now - createdMs) < THIRTY_DAYS_MS) {
+      return '<span class="sidebar-badge sidebar-badge-new">New</span>';
+    }
+    if (updatedMs && (now - updatedMs) < THIRTY_DAYS_MS) {
+      return '<span class="sidebar-badge sidebar-badge-updated">Updated</span>';
+    }
+    return '';
   }
 
   for (const item of items) {
@@ -82,7 +101,7 @@ export function generateSidebar(items, currentSlug, allDocs, config) {
       for (const subItem of item.items) {
         const isActive = currentSlug === subItem;
         const title = docTitleMap[subItem] || subItem.split('/').pop();
-        html += `<li><a href="${config.baseUrl}docs/${subItem}.html" class="${isActive ? 'active' : ''}">${title}</a></li>`;
+        html += `<li><a href="${config.baseUrl}docs/${subItem}.html" class="${isActive ? 'active' : ''}">${title}${getBadge(subItem)}</a></li>`;
       }
 
       html += '</ul></li>';

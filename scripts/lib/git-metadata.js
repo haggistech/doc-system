@@ -48,8 +48,10 @@ export function getGitMetadata(filePath, rootDir) {
     return {
       lastUpdated,
       lastUpdatedBy: lastAuthor,
+      lastUpdatedTimestamp: parseInt(lastTimestamp),
       created,
-      createdBy
+      createdBy,
+      createdTimestamp: firstCommit ? parseInt(firstCommit.split('|')[0]) : null
     };
   } catch (err) {
     // Not a git repo or file not tracked
