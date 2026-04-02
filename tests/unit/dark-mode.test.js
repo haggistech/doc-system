@@ -122,13 +122,13 @@ describe('Dark Mode Features', () => {
 
       if (exists) {
         const html = await fs.readFile(htmlPath, 'utf-8');
-        // Check for dark-mode.js script (may have baseUrl prefix)
-        expect(html).toMatch(/<script src="[^"]*dark-mode\.js"><\/script>/);
+        // Check for dark-mode.js script (may have baseUrl prefix and fingerprint hash)
+        expect(html).toMatch(/<script src="[^"]*dark-mode(\.[a-f0-9]+)?\.js"><\/script>/);
         expect(html).toContain('</head>');
 
         // Script should be in head for FOUC prevention
         const headEndIndex = html.indexOf('</head>');
-        const scriptIndex = html.indexOf('dark-mode.js');
+        const scriptIndex = html.indexOf('dark-mode');
         expect(scriptIndex).toBeLessThan(headEndIndex);
       }
     });
