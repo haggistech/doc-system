@@ -31,9 +31,15 @@
       // Mermaid SVG — read at click time so Mermaid has had time to render
       const svg = node.querySelector('svg');
       if (!svg) return;
+      const clone = svg.cloneNode(true);
+      // Remove fixed dimensions so CSS can scale it to fill the lightbox
+      clone.removeAttribute('width');
+      clone.removeAttribute('height');
+      clone.style.width = '100%';
+      clone.style.height = 'auto';
       const wrapper = document.createElement('div');
       wrapper.className = 'lightbox-svg';
-      wrapper.appendChild(svg.cloneNode(true));
+      wrapper.appendChild(clone);
       content.appendChild(wrapper);
     }
 

@@ -1627,13 +1627,14 @@ h3:hover .heading-anchor {
   background: #fff;
   border-radius: 8px;
   padding: 2rem;
-  max-width: 90vw;
-  max-height: 90vh;
+  width: min(90vw, 1200px);
+  max-height: 85vh;
   overflow: auto;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
 }
 
 .lightbox-svg svg {
-  max-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
 }
