@@ -1,0 +1,111 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  GIT_DEPTH: 0  # Full history needed for git metadata (author, dates)
+
+# Shared npm cache across all jobs
+.npm_cache: &npm_cache
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+    policy: pull-push
+
+# ── Test stage ──────────────────────────────────────────────────────────────
+
+test:
+  stage: test
+  image: node:22-alpine
+  <<: *npm_cache
+  before_script:
+    - npm ci
+  script:
+    - npm test
+    - npm run test:coverage
+  coverage: '/^All files\s*\|.*\|\s*([\d.]+)/'
+  artifacts:
+    when: always
+    paths:
+      - coverage/
+    expire_in: 7 days
+
+validate:
+  stage: test
+  image: node:22-alpine
+  script:
+    - |
+      echo "Validating JSON files..."
+      for file in *.json; do
+        [ -f "$file" ] || continue
+        node -e "JSON.parse(require('fs').readFileSync('$file','utf8'))" \
+          && echo "  ✓ $file" \
+          || (echo "  ✗ $file is invalid" && exit 1)
+      done
+    - |
+      echo "Checking required files..."
+      for file in package.json README.md config.json; do
+        [ -f "$file" ] && echo "  ✓ $file" || (echo "  ✗ $file missing" && exit 1)
+      done
+
+security:
+  stage: test
+  image: node:22-alpine
+  before_script:
+    - npm ci --prefer-offline
+  script:
+    - npm audit --audit-level=moderate || true
+    - npm outdated || true
+  allow_failure: true
+
+# ── Build stage ─────────────────────────────────────────────────────────────
+
+build:
+  stage: build
+  image: node:22-alpine
+  <<: *npm_cache
+  needs: [test]
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+    - |
+      [ -d build ]           || (echo "✗ build/ directory missing" && exit 1)
+      [ -f build/index.html ] || (echo "✗ index.html missing"      && exit 1)
+      [ -f build/sitemap.xml ] || (echo "✗ sitemap.xml missing"    && exit 1)
+      echo "✓ Build verified"
+      echo "  HTML pages : $(find build -name '*.html' | wc -l)"
+      echo "  JS files   : $(find build -name '*.js'   | wc -l)"
+      echo "  CSS files  : $(find build -name '*.css'  | wc -l)"
+      echo "  Build size : $(du -sh build | cut -f1)"
+  artifacts:
+    paths:
+      - build/
+    expire_in: 7 days
+
+# ── Deploy stage ─────────────────────────────────────────────────────────────
+
+# GitLab Pages — artifact must be named 'public/'
+pages:
+  stage: deploy
+  image: node:22-alpine
+  <<: *npm_cache
+  needs: []
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+    - mv build public
+    - |
+      echo "✓ Deploying to GitLab Pages"
+      echo "  Pages: $(find public -name '*.html' | wc -l) HTML files"
+      echo "  URL  : $CI_PAGES_URL"
+  artifacts:
+    paths:
+      - public/
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
