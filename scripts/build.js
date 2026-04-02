@@ -79,7 +79,7 @@ async function copyAssets(rootDir, outputDir, config) {
     'fuse.min.js'
   );
 
-  const jsFiles = ['search.js', 'copy-code.js', 'toc.js', 'dark-mode.js', 'line-numbers.js', 'tabs.js'];
+  const jsFiles = ['search.js', 'copy-code.js', 'toc.js', 'dark-mode.js', 'line-numbers.js', 'tabs.js', 'lightbox.js'];
   for (const jsFile of jsFiles) {
     await copyHashed(path.join(rootDir, 'theme', jsFile), jsFile);
   }

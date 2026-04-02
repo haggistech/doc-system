@@ -165,6 +165,7 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
   <script src="${asset('toc.js')}"></script>
   <script src="${asset('line-numbers.js')}"></script>
   <script src="${asset('tabs.js')}"></script>
+  <script src="${asset('lightbox.js')}"></script>
   ${processedHtml.includes('class="mermaid"') ? `<script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
     mermaid.initialize({
