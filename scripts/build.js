@@ -10,6 +10,15 @@ import { validateInternalLinks } from './lib/link-validator.js';
 import { processImages } from './lib/image-processor.js';
 import { generateSidebarFromFiles } from './lib/navigation-builder.js';
 import { generatePage, generate404Page } from './lib/page-generator.js';
+import {
+  minifyHTML,
+  minifyCSS,
+  extractCriticalCSS,
+  deferNonCriticalScripts,
+  makeScriptsAsync,
+  getCompressionStats,
+  formatBytes
+} from './lib/minifier.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,14 +67,42 @@ async function getMarkdownFiles(dir) {
  */
 async function copyAssets(rootDir, outputDir, config) {
   const manifest = {};
+  let cssStats = { original: 0, minified: 0 };
+  let jsStats = { original: 0, minified: 0 };
 
   async function copyHashed(src, name) {
-    const content = await fs.readFile(src);
-    const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
+    let content = await fs.readFile(src, 'utf-8');
+    const originalSize = Buffer.byteLength(content, 'utf-8');
+
+    // Minify CSS files
+    if (name.endsWith('.css')) {
+      const minified = minifyCSS(content);
+      cssStats.original += originalSize;
+      cssStats.minified += Buffer.byteLength(minified, 'utf-8');
+      content = minified;
+    }
+
+    // Minify JS files (but not from node_modules)
+    if (name.endsWith('.js') && !src.includes('node_modules')) {
+      // For theme JS files, apply minification
+      const minified = content
+        .replace(/\/\/.*$/gm, '') // Remove comments
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join(';');
+      jsStats.original += originalSize;
+      jsStats.minified += Buffer.byteLength(minified, 'utf-8');
+      content = minified;
+    }
+
+    const contentBuffer = Buffer.from(content, 'utf-8');
+    const hash = crypto.createHash('sha256').update(contentBuffer).digest('hex').slice(0, 8);
     const ext = path.extname(name);
     const base = path.basename(name, ext);
     const hashedName = `${base}.${hash}${ext}`;
-    await fs.copyFile(src, path.join(outputDir, hashedName));
+    await fs.writeFile(path.join(outputDir, hashedName), content);
     manifest[name] = hashedName;
   }
 
@@ -79,7 +116,7 @@ async function copyAssets(rootDir, outputDir, config) {
     'fuse.min.js'
   );
 
-  const jsFiles = ['search.js', 'copy-code.js', 'toc.js', 'dark-mode.js', 'line-numbers.js', 'tabs.js', 'lightbox.js'];
+  const jsFiles = ['search.js', 'copy-code.js', 'toc.js', 'dark-mode.js', 'line-numbers.js', 'tabs.js', 'lightbox.js', 'feedback.js'];
   for (const jsFile of jsFiles) {
     await copyHashed(path.join(rootDir, 'theme', jsFile), jsFile);
   }
@@ -96,7 +133,7 @@ async function copyAssets(rootDir, outputDir, config) {
     JSON.stringify(searchConfig, null, 2)
   );
 
-  return manifest;
+  return { manifest, cssStats, jsStats };
 }
 
 /**
@@ -174,20 +211,35 @@ async function build() {
   console.log('✓ Generated sidebar from folder structure');
 
   // Copy theme assets first to get fingerprinted manifest
-  const assetManifest = await copyAssets(rootDir, outputDir, config);
+  const { manifest: assetManifest, cssStats, jsStats } = await copyAssets(rootDir, outputDir, config);
 
   // Create docs output directory
   const docsOutputDir = path.join(outputDir, 'docs');
   await fs.mkdir(docsOutputDir, { recursive: true });
 
   // Generate HTML for each doc
+  let totalOriginalSize = 0;
+  let totalMinifiedSize = 0;
+
   for (const doc of docs) {
-    const html = generatePage(doc, docs, sidebar, config, assetManifest);
+    let html = generatePage(doc, docs, sidebar, config, assetManifest);
+
+    // Apply optimizations
+    html = deferNonCriticalScripts(html);
+    html = makeScriptsAsync(html);
+
+    // Minify HTML
+    const minifiedHTML = minifyHTML(html);
+    const stats = getCompressionStats(html, minifiedHTML);
+
+    totalOriginalSize += stats.originalSize;
+    totalMinifiedSize += stats.minifiedSize;
+
     const outputFilePath = path.join(docsOutputDir, `${doc.slug}.html`);
 
     // Create subdirectories if needed
     await fs.mkdir(path.dirname(outputFilePath), { recursive: true });
-    await fs.writeFile(outputFilePath, html);
+    await fs.writeFile(outputFilePath, minifiedHTML);
   }
 
   console.log(`✓ Built ${docs.length} pages`);
@@ -215,7 +267,9 @@ async function build() {
   );
 
   // Generate custom 404 page
-  await fs.writeFile(path.join(outputDir, '404.html'), generate404Page(config, assetManifest));
+  let notFoundHTML = generate404Page(config, assetManifest);
+  notFoundHTML = minifyHTML(notFoundHTML);
+  await fs.writeFile(path.join(outputDir, '404.html'), notFoundHTML);
   console.log('✓ Generated 404.html');
 
   // Generate sitemap.xml
@@ -231,19 +285,45 @@ async function build() {
   // Create index.html that redirects to first doc
   if (docs.length > 0 && sidebar.length > 0) {
     const firstDoc = sidebar[0].items[0];
-    const indexHtml = `<!DOCTYPE html>
-<html>
+    let indexHtml = `<!DOCTYPE html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="refresh" content="0;url=${config.baseUrl}docs/${firstDoc}.html">
+  <title>${config.title}</title>
 </head>
 <body>
-  <p>Redirecting to <a href="${config.baseUrl}docs/${firstDoc}.html">documentation</a>...</p>
+  <nav aria-label="Main navigation"></nav>
+  <main>
+    <h1>${config.title}</h1>
+    <p>Redirecting to <a href="${config.baseUrl}docs/${firstDoc}.html">documentation</a>...</p>
+  </main>
 </body>
 </html>`;
+    indexHtml = minifyHTML(indexHtml);
     await fs.writeFile(path.join(outputDir, 'index.html'), indexHtml);
   }
 
-  console.log(`✓ Build complete!`);
+  // Print compression statistics
+  console.log(`\n⚡ Optimization Summary:`);
+  if (totalOriginalSize > 0) {
+    const htmlSaved = totalOriginalSize - totalMinifiedSize;
+    const htmlPercent = ((htmlSaved / totalOriginalSize) * 100).toFixed(1);
+    console.log(`   HTML: ${formatBytes(totalOriginalSize)} → ${formatBytes(totalMinifiedSize)} (${htmlPercent}% smaller)`);
+  }
+  if (cssStats.original > 0) {
+    const cssSaved = cssStats.original - cssStats.minified;
+    const cssPercent = ((cssSaved / cssStats.original) * 100).toFixed(1);
+    console.log(`   CSS:  ${formatBytes(cssStats.original)} → ${formatBytes(cssStats.minified)} (${cssPercent}% smaller)`);
+  }
+  if (jsStats.original > 0) {
+    const jsSaved = jsStats.original - jsStats.minified;
+    const jsPercent = ((jsSaved / jsStats.original) * 100).toFixed(1);
+    console.log(`   JS:   ${formatBytes(jsStats.original)} → ${formatBytes(jsStats.minified)} (${jsPercent}% smaller)`);
+  }
+
+  console.log(`\n✓ Build complete!`);
   console.log(`✓ Output directory: ${outputDir}`);
 }
 

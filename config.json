@@ -6,6 +6,11 @@
   "repoUrl": "https://github.com/haggistech/doc-system",
   "docsDir": "docs",
   "outputDir": "build",
+  "branding": {
+    "favicon": "theme/favicon.ico",
+    "logo": "theme/logo.svg",
+    "logoAlt": "Documentation Site Logo"
+  },
   "search": {
     "maxResults": 10,
     "fuzzyThreshold": 0.3,
@@ -23,6 +28,10 @@
         "href": "https://github.com/haggistech/doc-system"
       }
     ]
+  },
+  "versions": {
+    "current": "1.0.0",
+    "available": ["1.0.0"]
   },
   "footer": {
     "copyright": "Built with ❤️ using Doc System"

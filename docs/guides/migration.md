@@ -555,23 +555,23 @@ After conversion, manually fix:
 
 Use this checklist for any migration:
 
-- [ ] Install Node.js 22.x
-- [ ] Clone doc-system repository
-- [ ] Copy markdown files to `docs/` folder
-- [ ] Copy images to `docs/images/` folder
-- [ ] Update `config.json` with site info
-- [ ] Update frontmatter in markdown files
-- [ ] Convert proprietary syntax to standard Markdown
-- [ ] Update internal links (remove `.md`, use relative paths)
-- [ ] Test build: `npm run build`
-- [ ] Test dev server: `npm run dev`
-- [ ] Check all pages render correctly
-- [ ] Check all images load
-- [ ] Test search functionality
-- [ ] Test dark mode
-- [ ] Test mobile responsiveness
-- [ ] Setup GitHub Actions for deployment
-- [ ] Deploy and verify live site
+- ◻️ Install Node.js 22.x
+- ◻️ Clone doc-system repository
+- ◻️ Copy markdown files to `docs/` folder
+- ◻️ Copy images to `docs/images/` folder
+- ◻️ Update `config.json` with site info
+- ◻️ Update frontmatter in markdown files
+- ◻️ Convert proprietary syntax to standard Markdown
+- ◻️ Update internal links (remove `.md`, use relative paths)
+- ◻️ Test build: `npm run build`
+- ◻️ Test dev server: `npm run dev`
+- ◻️ Check all pages render correctly
+- ◻️ Check all images load
+- ◻️ Test search functionality
+- ◻️ Test dark mode
+- ◻️ Test mobile responsiveness
+- ◻️ Setup GitHub Actions for deployment
+- ◻️ Deploy and verify live site
 
 ## Need Help?
 

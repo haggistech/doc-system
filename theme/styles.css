@@ -98,6 +98,57 @@ body {
   font-weight: 600;
   color: var(--text-color);
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navbar-logo {
+  height: 32px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+}
+
+.navbar-title {
+  white-space: nowrap;
+}
+
+.version-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.version-selector select {
+  padding: 0.5rem 0.75rem;
+  background: var(--sidebar-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.version-selector select:hover {
+  border-color: var(--primary-color);
+}
+
+.version-selector select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color), 0.1);
+}
+
+.version-badge {
+  padding: 0.25rem 0.5rem;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .navbar-links {
@@ -1793,4 +1844,273 @@ h3:hover .heading-anchor {
   .mermaid-container {
     page-break-inside: avoid;
   }
+}
+
+/* External Link Icons */
+a[target="_blank"]:not(.breadcrumb-item):not(.pagination):not(.navbar-brand):not(.edit-page-link):not(.search-result-link) {
+  position: relative;
+  padding-right: 1.3em;
+}
+
+a[target="_blank"]:not(.breadcrumb-item):not(.pagination):not(.navbar-brand):not(.edit-page-link):not(.search-result-link)::after {
+  content: '';
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.25em;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  vertical-align: -0.15em;
+}
+
+/* Feedback Widget */
+.feedback-widget {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.feedback-prompt {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+}
+
+.feedback-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.feedback-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  background: var(--sidebar-bg);
+  color: var(--text-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.feedback-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.feedback-btn.selected {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.feedback-message {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  display: none;
+}
+
+.feedback-message.show {
+  display: block;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Citations and Bibliography */
+.citation-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.85em;
+  vertical-align: super;
+  padding: 0 0.2em;
+}
+
+.citation-link:hover {
+  text-decoration: underline;
+}
+
+.bibliography {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.bibliography h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: var(--heading-color);
+}
+
+.bibliography-list {
+  list-style-type: none;
+  counter-reset: bibliography-counter;
+  padding: 0;
+}
+
+.bibliography-entry {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  color: var(--text-color);
+  padding-left: 2.5em;
+  position: relative;
+}
+
+.bibliography-number {
+  position: absolute;
+  left: 0;
+  font-weight: 600;
+  color: var(--primary-color);
+  width: 2.5em;
+  text-align: right;
+}
+
+.bibliography-author {
+  font-weight: 600;
+}
+
+.bibliography-title {
+  font-style: italic;
+}
+
+.bibliography-publication {
+  font-style: italic;
+}
+
+.bibliography-doi,
+.bibliography-url {
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-left: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.bibliography-doi:hover,
+.bibliography-url:hover {
+  text-decoration: underline;
+}
+
+/* Accessibility Report Styles */
+.accessibility-report {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--sidebar-bg);
+}
+
+.accessibility-report h2 {
+  margin-top: 0;
+  color: var(--heading-color);
+}
+
+.audit-summary {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.score-badge {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--bg-color);
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  min-width: 120px;
+}
+
+.score-badge .score {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.score-badge .level {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.audit-summary .stats {
+  flex: 1;
+}
+
+.audit-summary .stats p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.audit-summary .stats ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.issues-list {
+  margin-top: 1.5rem;
+}
+
+.issues-group {
+  margin-bottom: 1.5rem;
+}
+
+.issues-group h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: var(--heading-color);
+}
+
+.issues-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.issues-group li {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-color);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 4px;
+}
+
+.issue-title {
+  margin-bottom: 0.25rem;
+  color: var(--heading-color);
+}
+
+.issue-title strong {
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.issue-message {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+.issue-suggestion {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+[data-theme="dark"] .issue-suggestion {
+  color: #aaa;
 }

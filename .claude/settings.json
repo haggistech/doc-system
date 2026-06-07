@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PORT=8080 node scripts/serve.js)",
+      "Bash(PORT=8080 node /home/stuff/Projects/doc-system/scripts/serve.js)",
+      "Bash(PORT=9000 node /home/stuff/Projects/doc-system/scripts/serve.js)",
+      "Bash(PORT=9500 node /home/stuff/Projects/doc-system/scripts/serve.js)",
+      "Bash(node /home/stuff/Projects/doc-system/scripts/api-docs.js /home/stuff/Projects/doc-system /tmp/api-test)",
+      "Bash(node /home/stuff/Projects/doc-system/scripts/api-docs.js /home/stuff/Projects/doc-system/examples-api.js /tmp/api-test)",
+      "Bash(node /home/stuff/Projects/doc-system/scripts/api-docs.js /tmp/api-test /tmp/api-output)",
+      "Bash(node -e ' *)",
+      "Bash(grep -o \".{0,100}<li.{0,200}</li>.{0,100}\" /home/stuff/Projects/doc-system/build/404.html)",
+      "Bash(node /tmp/test-theming.mjs)"
+    ]
+  }
+}

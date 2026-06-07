@@ -4,6 +4,23 @@ import { marked } from 'marked';
 import hljs from 'highlight.js';
 import fm from 'front-matter';
 import { getGitMetadata } from './git-metadata.js';
+import { extractCitations, parseBibliography } from './citation-processor.js';
+
+// Counter for generating unique IDs
+let idCounter = 0;
+
+// HTML escape helper to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return text.replace(/[&<>"']/g, char => map[char]);
+}
 
 // Configure marked with syntax highlighting and language labels
 marked.use({
@@ -73,7 +90,7 @@ marked.use({
       // Build header content
       let headerContent = `<span class="code-block-language">${displayLang}</span>`;
       if (title) {
-        headerContent = `<span class="code-block-title">${title}</span>`;
+        headerContent = `<span class="code-block-title">${escapeHtml(title)}</span>`;
       }
 
       return `<div class="code-block-container" data-language="${cleanLang}">
@@ -135,7 +152,7 @@ marked.use({
       return `<div class="admonition admonition-${token.admonitionType}">
         <div class="admonition-heading">
           <span class="admonition-icon">${config.icon}</span>
-          <span class="admonition-title">${title}</span>
+          <span class="admonition-title">${escapeHtml(title)}</span>
         </div>
         <div class="admonition-content">
           ${content}
@@ -198,12 +215,12 @@ marked.use({
       }
 
       // Generate unique ID for this tab group
-      const tabId = `tabs-${Math.random().toString(36).substring(2, 11)}`;
+      const tabId = `tabs-${++idCounter}`;
 
       // Generate tab buttons
       const tabButtons = token.tabs.map((tab, index) => {
         const activeClass = index === 0 ? ' active' : '';
-        return `<button class="tab-button${activeClass}" data-tab="${tabId}-${index}">${tab.name}</button>`;
+        return `<button class="tab-button${activeClass}" data-tab="${tabId}-${index}">${escapeHtml(tab.name)}</button>`;
       }).join('\n');
 
       // Generate tab content panels
@@ -249,7 +266,7 @@ marked.use({
     renderer(token) {
       const content = marked.parse(token.text);
       return `<details class="details-block">
-        <summary class="details-summary">${token.summary}</summary>
+        <summary class="details-summary">${escapeHtml(token.summary)}</summary>
         <div class="details-content">${content}</div>
       </details>`;
     }
@@ -323,7 +340,7 @@ export function generateTableOfContents(html) {
 export async function processMarkdown(filePath, baseDir, rootDir) {
   const content = await fs.readFile(filePath, 'utf-8');
   const { attributes, body } = fm(content);
-  const html = marked(body);
+  let html = marked(body);
 
   const relativePath = path.relative(baseDir, filePath);
   const slug = relativePath.replace(/\.md$/, '').replace(/\\/g, '/');
@@ -336,6 +353,11 @@ export async function processMarkdown(filePath, baseDir, rootDir) {
   // Get Git metadata
   const gitMetadata = getGitMetadata(filePath, rootDir);
 
+  // Process citations
+  const { citations, citationMap, content: htmlWithCitations } = extractCitations(html);
+  const bibliography = parseBibliography(attributes);
+  html = htmlWithCitations;
+
   return {
     slug,
     title: attributes.title || slug,
@@ -344,6 +366,9 @@ export async function processMarkdown(filePath, baseDir, rootDir) {
     attributes,
     filePath,
     readingTime,
+    citations,
+    citationMap,
+    bibliography,
     metadata: {
       author: attributes.author || gitMetadata?.lastUpdatedBy || null,
       created: attributes.created || gitMetadata?.created || null,

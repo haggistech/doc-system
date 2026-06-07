@@ -7,6 +7,10 @@ description: Detailed guide to customizing the visual appearance of your documen
 
 This guide covers how to customize the visual appearance of your documentation system, from simple color changes to complete theme overhauls.
 
+## Getting Started
+
+Learn how to customize your documentation theme.
+
 ## Quick Start
 
 All theming is done through the `theme/styles.css` file. The system uses CSS custom properties (CSS variables) for easy customization.

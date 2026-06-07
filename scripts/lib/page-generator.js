@@ -1,5 +1,7 @@
 import { generateTableOfContents } from './markdown-processor.js';
 import { generateSidebar, generateBreadcrumbs, generatePagination } from './navigation-builder.js';
+import { generateBibliographyHTML } from './citation-processor.js';
+import { generateVersionSelector, getAvailableVersions, getCurrentVersion } from './version-builder.js';
 
 /**
  * Generate metadata table HTML
@@ -70,8 +72,20 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
   // Resolve a filename to its fingerprinted version (falls back to original name)
   const asset = name => config.baseUrl + (assetManifest[name] || name);
 
+  // Helper function to wrap h1 in header
+  function wrapH1InHeader(html) {
+    const h1Match = html.match(/<h1[^>]*>.*?<\/h1>/s);
+    if (h1Match) {
+      const h1 = h1Match[0];
+      const rest = html.slice(html.indexOf(h1) + h1.length);
+      return `<header>${h1}</header>${rest}`;
+    }
+    return html;
+  }
+
   // Generate TOC from document HTML
-  const { tocHtml, processedHtml } = generateTableOfContents(doc.html);
+  const { tocHtml, processedHtml: tocProcessed } = generateTableOfContents(doc.html);
+  const processedHtml = wrapH1InHeader(tocProcessed);
 
   const template = `<!DOCTYPE html>
 <html lang="en">
@@ -85,6 +99,7 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
   <meta property="og:title" content="${doc.title} | ${config.title}">
   <meta property="og:description" content="${doc.description || config.description}">
   <meta property="og:url" content="${(config.siteUrl || '').replace(/\/$/, '')}${config.baseUrl}docs/${doc.slug}.html">
+  ${config.branding?.favicon ? `<link rel="icon" type="image/x-icon" href="${config.branding.favicon}">` : ''}
   <link rel="stylesheet" href="${asset('styles.css')}">
   <link rel="stylesheet" href="${asset('highlight.css')}">
   <script src="${asset('dark-mode.js')}"></script>
@@ -97,12 +112,16 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
         <span></span>
         <span></span>
       </button>
-      <a href="${config.baseUrl}" class="navbar-brand">${config.navbar.title}</a>
+      <a href="${config.baseUrl}" class="navbar-brand">
+        ${config.branding?.logo ? `<img src="${config.branding.logo}" alt="${config.branding.logoAlt || 'Logo'}" class="navbar-logo">` : ''}
+        <span class="navbar-title">${config.navbar.title}</span>
+      </a>
       <div class="search-container">
         <input type="text" id="search-input" class="search-input" placeholder="Search docs..." autocomplete="off">
         <div id="search-results" class="search-results"></div>
       </div>
       <div class="navbar-links">
+        ${generateVersionSelector(getAvailableVersions(config), getCurrentVersion(config), config.baseUrl)}
         ${config.navbar.links.map(link => {
           if (link.href) {
             return `<a href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`;
@@ -140,6 +159,7 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
       ${doc.readingTime ? `<p class="reading-time">${doc.readingTime} min read</p>` : ''}
       <article>
         ${processedHtml}
+        ${doc.bibliography && doc.bibliography.length > 0 ? generateBibliographyHTML(doc.bibliography) : ''}
       </article>
 
       ${config.repoUrl && doc.attributes.edit !== false ? `<div class="edit-page">
@@ -154,6 +174,21 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
 
       <div class="pagination">
         ${generatePagination(doc, allDocs, sidebar, config)}
+      </div>
+
+      <div class="feedback-widget">
+        <div class="feedback-prompt">Was this page helpful?</div>
+        <div class="feedback-buttons">
+          <button class="feedback-btn" data-helpful="yes">
+            <span>👍</span>
+            <span>Helpful</span>
+          </button>
+          <button class="feedback-btn" data-helpful="no">
+            <span>👎</span>
+            <span>Not Helpful</span>
+          </button>
+        </div>
+        <div class="feedback-message"></div>
       </div>
     </main>
 
@@ -171,6 +206,7 @@ export function generatePage(doc, allDocs, sidebar, config, assetManifest = {}) 
   <script src="${asset('line-numbers.js')}"></script>
   <script src="${asset('tabs.js')}"></script>
   <script src="${asset('lightbox.js')}"></script>
+  <script src="${asset('feedback.js')}"></script>
   ${processedHtml.includes('class="mermaid"') ? `<script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
     mermaid.initialize({
@@ -239,18 +275,23 @@ export function generate404Page(config, assetManifest = {}) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Page Not Found | ${config.title}</title>
+  ${config.branding?.favicon ? `<link rel="icon" type="image/x-icon" href="${config.branding.favicon}">` : ''}
   <link rel="stylesheet" href="${asset('styles.css')}">
   <script src="${asset('dark-mode.js')}"></script>
 </head>
 <body>
   <nav class="navbar">
     <div class="navbar-inner">
-      <a href="${config.baseUrl}" class="navbar-brand">${config.navbar.title}</a>
+      <a href="${config.baseUrl}" class="navbar-brand">
+        ${config.branding?.logo ? `<img src="${config.branding.logo}" alt="${config.branding.logoAlt || 'Logo'}" class="navbar-logo">` : ''}
+        <span class="navbar-title">${config.navbar.title}</span>
+      </a>
       <div class="search-container">
         <input type="text" id="search-input" class="search-input" placeholder="Search docs..." autocomplete="off">
         <div id="search-results" class="search-results"></div>
       </div>
       <div class="navbar-links">
+        ${generateVersionSelector(getAvailableVersions(config), getCurrentVersion(config), config.baseUrl)}
         <button class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
           <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="5"></circle>
@@ -267,12 +308,14 @@ export function generate404Page(config, assetManifest = {}) {
     </div>
   </nav>
 
-  <div class="not-found">
-    <div class="not-found-code">404</div>
-    <h1 class="not-found-title">Page not found</h1>
-    <p class="not-found-message">The page you're looking for doesn't exist or has been moved.</p>
-    <a href="${config.baseUrl}" class="not-found-home">Go to home</a>
-  </div>
+  <main>
+    <div class="not-found">
+      <div class="not-found-code">404</div>
+      <h1 class="not-found-title">Page not found</h1>
+      <p class="not-found-message">The page you're looking for doesn't exist or has been moved.</p>
+      <a href="${config.baseUrl}" class="not-found-home">Go to home</a>
+    </div>
+  </main>
 
   <script src="${asset('fuse.min.js')}"></script>
   <script src="${asset('search.js')}"></script>
